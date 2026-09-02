@@ -75,6 +75,10 @@ claude plugin update discord-session@ryuki-plugins
 
 そのあと、動いている Discord セッションで `/reload-plugins` を打つか、セッションを再起動します。
 
+なお、ローカルディレクトリを marketplace にした場合、スキル本文は元ディレクトリから直接読まれるようです
+（`${CLAUDE_SKILL_DIR}` が元のパスを指す）。編集後は `/reload-plugins` だけで反映されることが多いですが、
+`plugin.json` の `version` を上げて `claude plugin update` しておくとキャッシュ側も揃います。
+
 ## 仕組みのメモ
 
 - `/clear` の送り先は `CLAUDE_PID` → その TTY → 同じ TTY の tmux ペイン、で特定します。tmux の外や
