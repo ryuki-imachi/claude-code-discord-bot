@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ryuki-plugins",
+  "owner": {
+    "name": "ryuki-imachi"
+  },
+  "metadata": {
+    "description": "リュウキの自作 Claude Code プラグイン置き場"
+  },
+  "plugins": [
+    {
+      "name": "discord-session",
+      "source": "./",
+      "description": "Discord チャンネルセッションのコンテキスト管理（/ctx・/clear・Bot ステータス表示）",
+      "version": "0.1.0"
+    }
+  ]
+}
