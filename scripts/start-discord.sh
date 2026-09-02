@@ -11,7 +11,13 @@
 set -u
 SESSION="${DISCORD_TMUX_SESSION:-discord}"
 DIR="$PWD"
-HERE="$(cd "$(dirname "$0")" && pwd)"
+# ~/.local/bin/discord-start のようなシンボリックリンク経由でも実体の scripts/ を指すようにする
+SELF="$0"
+while [ -L "$SELF" ]; do
+  target=$(readlink "$SELF")
+  case "$target" in /*) SELF="$target" ;; *) SELF="$(dirname "$SELF")/$target" ;; esac
+done
+HERE="$(cd "$(dirname "$SELF")" && pwd)"
 CLAUDE_CMD="claude --channels plugin:discord@claude-plugins-official $*"
 PRESENCE_CMD="DISCORD_PRESENCE_CWD='$DIR' uv run '$HERE/discord_presence.py'"
 

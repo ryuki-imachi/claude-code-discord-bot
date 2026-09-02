@@ -4,7 +4,8 @@ description: 今のセッションのコンテキスト使用量（ctx / 5h / 7d
 user-invocable: true
 argument-hint: ""
 allowed-tools:
-  - Bash
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/context_usage.py *)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/context_usage.py)
   - mcp__plugin_discord_discord__reply
 ---
 
@@ -18,11 +19,8 @@ Discord セッションは 1 セッションを開きっぱなしにするので
 1. Bash で次を実行する（引数不要。セッション ID は環境変数 `CLAUDE_CODE_SESSION_ID` から自動取得）
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py
+${CLAUDE_SKILL_DIR}/scripts/context_usage.py
 ```
-
-   `${CLAUDE_PLUGIN_ROOT}` が展開されない環境では、この SKILL.md と同じディレクトリにある
-   `scripts/context_usage.py` を絶対パスで実行する。
 
 2. 出力をそのままコードブロックに入れて reply する（Discord は行頭の記号をリスト表示に変えて崩すため）。前置きは不要
 3. `ctx` が 80% 以上なら「区切りのいいところで /clear しようか」と一言添える

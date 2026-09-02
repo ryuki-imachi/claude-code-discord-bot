@@ -64,6 +64,17 @@ claude plugin install discord-session@ryuki-plugins --scope project
 
 `<plugin>` はこのリポジトリのパス（例: `~/Desktop/work/claude-discord-channel/discord-session`）。
 
+## 更新のしかた
+
+インストール時にプラグインは `~/.claude/plugins/cache/ryuki-plugins/discord-session/<version>/` へコピーされます。
+このリポジトリを編集してコミットしたら、次で反映してください。
+
+```sh
+claude plugin update discord-session@ryuki-plugins
+```
+
+そのあと、動いている Discord セッションで `/reload-plugins` を打つか、セッションを再起動します。
+
 ## 仕組みのメモ
 
 - `/clear` の送り先は `CLAUDE_PID` → その TTY → 同じ TTY の tmux ペイン、で特定します。tmux の外や

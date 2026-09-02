@@ -4,7 +4,9 @@ description: Discord から「/clear」「クリアして」「コンテキス�
 user-invocable: true
 argument-hint: ""
 allowed-tools:
-  - Bash
+  - Bash(${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py *)
+  - Bash(${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/clear_session.sh *)
   - mcp__plugin_discord_discord__reply
 ---
 
@@ -28,11 +30,8 @@ ${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py
 3. `/clear` を送る。`--chat-id` には届いた `<channel>` タグの `chat_id` を渡す（完了通知の宛先になる）
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/skills/clear/scripts/clear_session.sh --chat-id <chat_id>
+${CLAUDE_SKILL_DIR}/scripts/clear_session.sh --chat-id <chat_id>
 ```
-
-   `${CLAUDE_PLUGIN_ROOT}` が展開されない環境では、この SKILL.md と同じディレクトリにある
-   `scripts/clear_session.sh` を絶対パスで実行する。
 
 4. 結果で分岐する
    - `OK:` が出たら、それ以上ツールを呼ばず短く終える。ターン終了と同時に /clear が走り、新セッションの
