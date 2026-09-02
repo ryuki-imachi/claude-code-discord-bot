@@ -83,3 +83,45 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
 - GitHub に公開し、marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/<repo>`）
 - 公式プラグインの `server.ts` をフォークしてプレゼンス更新を統合する（Gateway 接続を 1 本にできる）
 - Developer Portal で Presence Intent を有効にし、`discord_presence_check.py` で表示を自動確認できるようにする
+
+## 公開前チェックリスト（権利・個人情報）
+
+2026-09-03 に確認した内容。公開作業のときにこの節を上から順に見る。
+
+### ライセンス
+
+- 自作コードのライセンスを決めて `LICENSE` を置く。MIT を推奨（依存と公式プラグインのどちらとも矛盾しない）
+- 依存ライブラリは配布に含めず `uv run` で取得するので、表記義務は実質無い。参考: discord.py は MIT、mcp は MIT、
+  httpx は BSD-3-Clause、python-dotenv は BSD-3-Clause、aiohttp は Apache-2.0 と MIT
+- 公式 Discord プラグイン（`anthropics/claude-plugins-official`）は Apache-2.0。今のプラグインは公式のコードを含んで
+  いないので義務は無い。将来 `server.ts` をフォークして同梱する場合は、Apache-2.0 の条件に従う。
+  具体的には、元の LICENSE ファイル（と NOTICE があればそれ）を同梱し、改変したファイルに「変更した」旨と元の著作権表示を残す。
+  MIT のリポジトリに Apache-2.0 のファイルが混ざるのは問題ないが、README にファイル単位でライセンスを書き分ける
+
+### 商標・名乗り方
+
+- 「Discord」「Claude Code」を製品名として使わず、README の冒頭に「非公式のコミュニティ製プラグインで、Discord 社
+  および Anthropic 社とは無関係」と明記する。`discord-session` のような技術的な名前自体は discord.py などと同じ使い方で問題ない
+- Discord のロゴ・アイコン画像は同梱しない
+
+### 個人情報・秘密情報
+
+- Bot トークンを絶対に含めない。`.env` と `.venv/` は `.gitignore` 済み。MCP を移植するとき `original-tools/.env` は移動しない
+- Discord のユーザー ID・チャンネル ID・ギルド ID は個人のサーバーを特定できるので、コードにも文書にも書かない
+  （2026-09-03 に文書から除去し、コミット履歴も書き換え済み）。設定は `~/.claude/channels/discord/` から読む
+- `/Users/ryuki/...` のような絶対パスは `<plugin>` や `~/path/to/...` に置き換える。Bot 名 kuroko-chan も「あなたの Bot」に直す
+- `plugin.json` の author email は GitHub の noreply アドレスなのでそのままでよい
+- 公開直前に `git log --all -p | grep -E '[0-9]{17,19}|sk-ant|DISCORD_BOT_TOKEN='` で履歴ごと確認する。
+  不安なら orphan ブランチで履歴を一本化してから push する
+
+### 規約
+
+- Discord Developer Policy: 自分の Bot トークンで自分のサーバーを操作する通常の Bot なのでセルフボットには当たらない。
+  プレゼンス更新は変化時のみ・最短 20 秒間隔で、Gateway のレート制限（120 イベント/60 秒）に十分収まる
+- Anthropic: Claude Code のプラグイン仕様は公開されており、自作プラグインの公開・配布は自由。
+  `claude-plugins-official` へ投稿する場合は別途レビューがある
+
+### 同梱物の確認
+
+- `original-tools/docs/design.md` などに個人サーバーの情報が無いか読む
+- `qiita-article/` の画像は記事用なので公開リポジトリに入れない
