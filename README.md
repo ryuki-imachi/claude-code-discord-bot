@@ -1,5 +1,7 @@
 # discord-session
 
+Discord 社および Anthropic 社とは無関係の、非公式なコミュニティ製プラグインです。
+
 Claude Code の公式 Discord プラグインに足りない機能を補う、自作の Claude Code プラグインです。
 公式プラグイン（`discord@claude-plugins-official`）の上に乗せて使います。公式側はメッセージの
 送受信だけを担当し、こちらは「セッションの管理」と「サーバーの管理」を担当する、という分担です。
