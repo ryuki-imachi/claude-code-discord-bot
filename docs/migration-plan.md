@@ -1,0 +1,85 @@
+# 自作機能の discord-session プラグインへの集約 手順書
+
+作成: 2026-09-03（実施は 9/3 以降）
+
+## 方針
+
+公式 Discord プラグインに無い自作機能のうち、汎用的なものをこのプラグインへ集め、
+kuroko-chan の運用ルールと台帳に依存するものは discord-workspace に残す。
+
+| 対象 | 行き先 | 理由 |
+| --- | --- | --- |
+| サーバー管理 MCP（original-tools、9 ツール） | プラグイン `.mcp.json` | 公式に無い機能で汎用。今はグローバル登録のため無関係なセッションでも起動している |
+| setup-channel スキル + remind-channel-access フック | プラグイン | 公式プラグインの access.json 受信設定の穴を塞ぐ汎用ワークフロー。ユーザー ID の直書きだけ直す |
+| sync-threads / close-article-thread / save-knowledge / task-memo / inject-ledgers | discord-workspace に残す | memory/ の台帳、knowledge/、#記事の種 のチャンネル ID に依存した運用そのもの |
+
+## 手順 1. サーバー管理 MCP の移植
+
+現状: `~/Desktop/work/claude-discord-channel/original-tools/`（Python 3.10+、FastMCP、httpx、python-dotenv、uv）。
+`~/.claude.json` の `mcpServers.discord-server-admin` にグローバル登録。トークンとギルド ID は original-tools 直下の `.env`
+（`DISCORD_BOT_TOKEN`、`DISCORD_GUILD_ID`）から `load_dotenv` で読んでいる。
+ツール: list_channels / create_channel / create_category / edit_channel / delete_channel /
+create_forum_thread / list_threads / close_thread / reopen_thread。
+
+1. ソースを移動する: `original-tools/{pyproject.toml,uv.lock,src/,docs/}` → `discord-session/mcp/server-admin/`。
+   `.env` は移動しない（後述のとおり共有の場所から読む）。`.venv` は作り直す
+2. `server.py` のトークン読み込みを直す。優先順は「環境変数 → `${DISCORD_STATE_DIR:-~/.claude/channels/discord}/.env`」
+   にして、公式プラグインと同じファイルを共有する。`DISCORD_GUILD_ID` も同じファイルに書けるようにする
+   （代案: 未設定なら `GET /users/@me/guilds` で Bot の参加サーバーを取り、1 つだけならそれを使う）
+3. `.mcp.json` をプラグイン直下に置く
+
+```json
+{
+  "mcpServers": {
+    "server-admin": {
+      "command": "uv",
+      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}/mcp/server-admin", "python", "-m", "discord_mcp.server"]
+    }
+  }
+}
+```
+
+4. ツール名が変わる。`mcp__discord-server-admin__<tool>` → `mcp__plugin_discord-session_server-admin__<tool>`
+   （公式の `mcp__plugin_discord_discord__reply` と同じ規則。実際の名前は `/mcp` かツール一覧で確認してから置換する）。
+   discord-workspace 側で書き換える場所:
+   - `.claude/settings.json` の `permissions.allow`（8 ルール）と PostToolUse フックの matcher
+   - `.claude/skills/setup-channel/SKILL.md`、`sync-threads/SKILL.md`、`close-article-thread/SKILL.md` の allowed-tools と本文
+   - `CLAUDE.md` の「利用可能なツール」表、`docs/discord-context-control.md`
+5. グローバル登録を外す: `claude mcp remove discord-server-admin -s user`（`~/.claude.json` から消える）
+6. `plugin.json` と `marketplace.json` の version を 0.2.0 に上げてコミット →
+   discord-workspace で `claude plugin update discord-session@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
+7. 検証
+   - discord-workspace の使い捨てセッションで `list_channels` が動く（tmux 内、`--channels` は付けない）
+   - 別ディレクトリのセッションで server-admin の MCP が起動しない（子プロセス一覧で確認）
+   - Discord から「テスト用チャンネル作って」→ setup-channel の流れが通る（受信テストまで）
+8. 片付け: `original-tools/` を削除し、`claude-discord-channel/README.md` の表を更新。`qiita-article/` の記事に
+   MCP のパスが書かれていないか確認する
+
+## 手順 2. setup-channel とフックの移植
+
+1. `discord-workspace/.claude/skills/setup-channel/` → `discord-session/skills/setup-channel/`
+   - allowed-tools のツール名を新しい名前に
+   - `allowFrom` へのユーザー ID の直書きをやめ、`~/.claude/channels/discord/access.json` の
+     トップレベル `allowFrom` をそのまま使う手順に書き換える
+   - 「CLAUDE.md のチャンネル構成表を更新」「memory/active-threads.md にセクション追加」は
+     「プロジェクトの CLAUDE.md や台帳にチャンネル一覧があれば更新する」という一般化した表現にする
+2. `discord-workspace/.claude/hooks/remind-channel-access.sh` → `discord-session/hooks/remind-channel-access.sh`
+   - 注入する文面のユーザー ID を access.json から読むように（`python3` か `jq` で `allowFrom` を取る）
+   - `hooks/hooks.json` に PostToolUse（matcher: 新しい create_channel のツール名）を追加
+3. discord-workspace 側から skill と hook、settings.json の PostToolUse エントリを削除。CLAUDE.md の
+   「新規作成時は必ず /setup-channel の手順に従い」を `/discord-session:setup-channel` に書き換える
+4. version を上げて update → `/reload-plugins` → Discord から「テスト用チャンネル作って」で通しテスト → テストチャンネル削除
+
+## 注意
+
+- `--channels` 付きの claude を検証用に 2 つ立てない（二重返信）。検証は `--channels` 無しの使い捨てセッションで行う
+- プラグインの MCP サーバーは `/reload-plugins` で再起動される。Discord ブリッジ（公式プラグイン）も一瞬つなぎ直る
+- ツール名の置換漏れがあると、スキルが古い名前を呼んで許可プロンプトや失敗になる。
+  `grep -rn discord-server-admin ~/Desktop/work/discord-workspace --include='*.md' --include='*.json' --include='*.sh'` で最後に確認する
+- 作業の区切りごとに、このプラグインの `CLAUDE.md`「現在の状況」と discord-workspace の `memory/tasks.md` を更新する
+
+## その後の候補
+
+- GitHub に公開し、marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/<repo>`）
+- 公式プラグインの `server.ts` をフォークしてプレゼンス更新を統合する（Gateway 接続を 1 本にできる）
+- Developer Portal で Presence Intent を有効にし、`discord_presence_check.py` で表示を自動確認できるようにする
