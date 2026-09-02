@@ -12,7 +12,7 @@
       "name": "discord-session",
       "source": "./",
       "description": "Discord チャンネルセッションのコンテキスト管理（/ctx・/clear・Bot ステータス表示）",
-      "version": "0.1.0"
+      "version": "0.1.1"
     }
   ]
 }
