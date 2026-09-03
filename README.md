@@ -71,6 +71,12 @@ claude plugin install discord-bot@ryuki-plugins --scope project
 
 保存が無くても `/ctx` は会話ログから概算を出しますが、5h/7d は出ず、常駐スクリプトも対象を見つけられません。
 
+古いダンプ（Claude Code 本体が終了済みで 24 時間以上更新の無いファイル）は `statusline_dump.py` が
+書き込みのたびに自動で消します。走査はディレクトリ1回だけで、例外は握りつぶすので statusline の表示は
+邪魔しません。自分の statusline スクリプトに保存処理を足す方式を選んだ場合は、`statusline_dump.py` の
+`prune_stale_dumps(dump_dir, keep_path=...)` 関数をそのまま自分のスクリプトへ写し、書き込み直後に
+`keep_path` に今回書いたファイルのパスを渡して呼んでください（`_claude_pid` が無いファイルは更新時刻だけで判定します）。
+
 ### 3. 起動する
 
 Discord セッションに使うプロジェクトのディレクトリで実行します。`~/.local/bin/discord-start` のような

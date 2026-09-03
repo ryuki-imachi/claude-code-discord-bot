@@ -20,9 +20,53 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 DUMP_DIR = os.environ.get("DISCORD_BOT_STATUSLINE_DIR") or os.path.join(os.path.expanduser("~"), ".claude", "tmp", "statusline")
+STALE_SECONDS = 24 * 60 * 60
+
+
+def prune_stale_dumps(dump_dir: str, keep_path: str | None = None, stale_seconds: int = STALE_SECONDS) -> None:
+    """dump_dir 内の古いダンプを削除する（ディレクトリ走査は1回だけ）。
+
+    削除条件:
+      - `_claude_pid` を持つファイルは「そのPIDが死んでいる」かつ「更新時刻が stale_seconds より前」
+      - `_claude_pid` を持たない（読めない）ファイルは更新時刻だけで判定
+    keep_path（今回自分が書いたファイル）は対象から除外する。
+    例外は握りつぶし、statusline の表示を邪魔しない。
+    """
+    try:
+        now = time.time()
+        with os.scandir(dump_dir) as it:
+            for entry in it:
+                try:
+                    if not entry.name.endswith(".json") or entry.name.startswith("."):
+                        continue
+                    if keep_path and os.path.abspath(entry.path) == os.path.abspath(keep_path):
+                        continue
+                    st = entry.stat()
+                    if now - st.st_mtime <= stale_seconds:
+                        continue
+                    pid = None
+                    try:
+                        with open(entry.path) as f:
+                            pid = json.load(f).get("_claude_pid")
+                    except Exception:
+                        pid = None
+                    if pid is not None:
+                        try:
+                            os.kill(pid, 0)
+                            continue  # まだ生きている
+                        except ProcessLookupError:
+                            pass
+                        except Exception:
+                            continue  # 判定できない場合は消さない
+                    os.remove(entry.path)
+                except Exception:
+                    continue
+    except Exception:
+        pass
 
 
 def find_claude_pid() -> int | None:
@@ -62,7 +106,9 @@ def main() -> int:
             tmp = os.path.join(DUMP_DIR, f".{sid}.json.tmp")
             with open(tmp, "w") as f:
                 json.dump(data, f, ensure_ascii=False)
-            os.replace(tmp, os.path.join(DUMP_DIR, f"{sid}.json"))
+            dest = os.path.join(DUMP_DIR, f"{sid}.json")
+            os.replace(tmp, dest)
+            prune_stale_dumps(DUMP_DIR, keep_path=dest)
         except Exception:
             pass
     args = sys.argv[1:]
