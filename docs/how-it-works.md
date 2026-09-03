@@ -2,29 +2,7 @@
 
 ## /clear の流れ
 
-```mermaid
-sequenceDiagram
-    actor U as User
-    participant D as Discord
-    participant CH as channel server
-    participant CL as Claude (session A)
-    participant T as tmux pane
-    participant CL2 as Claude (session B)
-    participant HK as SessionStart hook
-
-    U->>D: /clear
-    D->>CH: message
-    CH->>CL: channel notification
-    CL->>CH: reply "clearing (ctx 54%)"
-    CH->>D: post
-    CL->>T: clear_session.sh: write marker, send-keys "/clear"
-    Note over T: queued until the turn ends
-    T->>CL2: /clear starts a new session
-    CL2->>HK: SessionStart(source=clear)
-    HK->>HK: read marker (chat_id)
-    HK->>D: POST "cleared" via REST
-    HK-->>CL2: context: "started by /clear from Discord"
-```
+![/clear flow](diagrams/clear-flow.png)
 
 - `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続は残り、セッション ID だけ変わります
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
@@ -32,13 +10,7 @@ sequenceDiagram
 
 ## Bot ステータス
 
-```mermaid
-flowchart LR
-    CC["Claude Code"] -->|"statusline JSON<br/>on every render"| W["statusline_dump.py"]
-    W -->|"session_id.json<br/>+ _claude_pid"| DIR["~/.claude/tmp/statusline/"]
-    DIR -->|"pick dump whose _claude_pid<br/>is this session's parent"| PR["presence.ts<br/>(every 20s)"]
-    PR -->|"setPresence<br/>ctx 53% · 5h 46% · 7d 17%"| D["Discord"]
-```
+![Presence data flow](diagrams/presence.png)
 
 `channel/presence.ts` が、channel サーバーを起動した Claude Code 本体の PID を親プロセスをたどって特定し、
 その PID を `_claude_pid` に持つステータスラインのダンプを 20 秒ごとに読んでアクティビティを更新します
@@ -49,23 +21,7 @@ playing（既定）/ watching / listening / competing / custom を選べます�
 
 ## スラッシュコマンド
 
-```mermaid
-sequenceDiagram
-    actor U as User
-    participant D as Discord
-    participant CH as channel server
-    participant CL as Claude
-
-    Note over CH: on startup: register commands<br/>from commands.json (+ ~/.claude/discord-bot/commands.json)
-    U->>D: /task text: list
-    D->>CH: interaction
-    CH->>CH: sender in allowFrom?<br/>channel opted in?
-    CH-->>U: ephemeral "accepted: /task-memo list"
-    CH->>CL: channel notification<br/>"/task-memo list" (via=slash_command)
-    CL->>CL: run skill
-    CL->>CH: reply
-    CH->>D: post result
-```
+![Slash command flow](diagrams/slash-command.png)
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
 定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。

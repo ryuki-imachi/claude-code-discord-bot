@@ -43,6 +43,7 @@ scripts/start-discord.sh            tmux セッション discord に claude を�
 scripts/statusline_dump.py          ステータスライン JSON を保存するラッパー（古いダンプの掃除つき）
 scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用（Presence Intent が必要）
 docs/migration-plan.md              移植の手順書と公開前チェックリスト
+docs/diagrams/                      図の元ファイル（.drawio）と書き出した PNG。編集は draw.io で、書き出しは drawio CLI（--scale 3）
 ```
 
 状態ファイルは `~/.claude/discord-bot/`（`pending-clear.json`、`clear-notify.log`）に、
