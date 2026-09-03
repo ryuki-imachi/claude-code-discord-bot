@@ -1,6 +1,6 @@
 #!/bin/bash
 # start-discord.sh — Discord セッション一式を tmux セッション "discord" で起動する（discord-bot プラグイン同梱）
-#   claude --channels plugin:discord-bot@ryuki-plugins [追加引数] を tmux の中で起動する
+#   DISCORD_BOT_CHANNEL_MODE=official（既定）なら公式プラグインを channel に、fork ならフォーク版を channel にして起動する
 #   （Bot のステータス表示は channel サーバーが担当するので常駐スクリプトは無い）
 #
 #   使い方: Discord セッションにしたいプロジェクトのディレクトリで実行する
@@ -11,12 +11,22 @@
 set -u
 SESSION="${DISCORD_TMUX_SESSION:-discord}"
 DIR="$PWD"
-CLAUDE_CMD="claude --channels plugin:discord-bot@ryuki-plugins $*"
+# channel（Discord との送受信）をどのプラグインに任せるか。
+#   official（既定）: 公式 discord@claude-plugins-official を --channels に渡す。フォーク版 channel サーバーは
+#                    プレゼンス表示だけ担当し、スラッシュコマンドは止める（受け付けても Claude に届かないため）
+#   fork            : フォーク版を --dangerously-load-development-channels で読み込む。Claude Code が公式以外の
+#                    channel を既定で捨てるため、このフラグが必要。ただし環境によっては無視される（調査中）
+MODE="${DISCORD_BOT_CHANNEL_MODE:-official}"
+if [ "$MODE" = "fork" ]; then
+  CLAUDE_CMD="claude --dangerously-load-development-channels plugin:discord-bot@ryuki-plugins $*"
+else
+  CLAUDE_CMD="DISCORD_SLASH_COMMANDS=off claude --channels plugin:discord@claude-plugins-official $*"
+fi
 
 if ! tmux has-session -t "$SESSION" 2>/dev/null; then
   tmux new-session -d -s "$SESSION" -n claude -c "$DIR" "$CLAUDE_CMD"
   echo "tmux セッション $SESSION を作成し、claude を起動しました（cwd: $DIR）"
-elif pgrep -f 'claude.*--channels.*plugin:discord' >/dev/null; then
+elif pgrep -f 'claude.*(--channels|--dangerously-load-development-channels).*plugin:discord' >/dev/null; then
   echo "claude（--channels）は起動済みです"
 elif tmux list-panes -s -t "$SESSION" -F '#{pane_pid}' | xargs -I{} pgrep -P {} -x claude 2>/dev/null | grep -q . \
   || tmux list-panes -s -t "$SESSION" -F '#{pane_current_command}' | grep -Eq '^(claude|[0-9]+\.[0-9]+\.[0-9]+)$'; then
