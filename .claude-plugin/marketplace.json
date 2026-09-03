@@ -12,7 +12,7 @@
       "name": "discord-bot",
       "source": "./",
       "description": "あなたの Bot の中身。Discord チャンネルセッションのコンテキスト管理（/ctx・/clear・Bot ステータス表示）",
-      "version": "0.6.7"
+      "version": "0.6.8"
     }
   ]
 }
