@@ -3,36 +3,32 @@
 リュウキの Discord サーバー管理 Bot「kuroko-chan」の中身です。Claude Code のプラグインとして動きます。
 Discord 社および Anthropic 社とは無関係の、非公式なコミュニティ製プラグインです。
 
-Claude Code の公式 Discord プラグインに足りない機能を補う、自作の Claude Code プラグインです。
-公式プラグイン（`discord@claude-plugins-official`）の上に乗せて使います。公式側はメッセージの
-送受信だけを担当し、こちらは「セッションの管理」と「サーバーの管理」を担当する、という分担です。
-
-Discord のチャンネル機能は 1 つのセッションを開きっぱなしにするので、コンテキストが溜まり続けます。
-ところが、チャンネル経由のメッセージは Claude への入力テキストとして届くだけで、`/clear` などの
-組み込みコマンドは実行されません（[anthropics/claude-code#37342](https://github.com/anthropics/claude-code/issues/37342)）。
-このプラグインは、その穴を tmux とステータスラインの情報で埋めるところから始まりました。
+Claude Code の Discord チャンネル機能（`claude --channels ...`）は、Discord のメッセージを Claude の会話に流し込みます。
+公式の Discord プラグインはメッセージの送受信だけを担当していて、セッションの管理（コンテキストの残量確認やクリア）や
+サーバーの管理（チャンネルやスレッドの操作）はできません。このプラグインは、公式プラグインの channel サーバーを
+フォークして土台にし、その上にセッション管理・サーバー管理・Bot ステータス表示を足したものです。
 
 ## 機能
 
-| 機能 | 状態 | 使い方 |
-| --- | --- | --- |
-| コンテキスト使用量の表示 | 済 | Discord で `/ctx` と送る。ctx / 5h / 7d の使用率をコードブロックで返す |
-| Discord からのクリア | 済 | Discord で `/clear` と送る。宣言 → tmux ペインに `/clear` を送信 → 新セッション開始時に「クリアしたよ」を自動投稿 |
-| Bot ステータスに使用量を常時表示 | 済 | 常駐スクリプトが Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新。ctx 80% 以上で赤、セッション無しで黄 |
-| 起動ランチャー | 済 | `start-discord.sh` が tmux セッション `discord` に claude と常駐スクリプトを立てる。二重起動は防ぐ |
-| サーバー管理 MCP | 済 | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（9 ツール）。`.mcp.json` で `server-admin` として自動起動 |
-| チャンネル作成ワークフロー | 済 | Discord で「チャンネル作って」など。`/discord-bot:setup-channel` が作成 → `access.json` に受信設定を登録 → 受信テストまで行う。`create_channel` 実行直後には PostToolUse フックが受信設定を忘れないよう注意書きを差し込む |
+| 機能 | 使い方 |
+| --- | --- |
+| Discord との送受信 | 公式プラグインからフォークした channel サーバー（`channel/`）。reply / react / edit_message / fetch_messages / download_attachment |
+| アクセス管理 | `/discord-bot:access`（ペアリング承認・allowlist・チャンネルの受信設定）と `/discord-bot:configure`（Bot トークンの保存）。公式と同じ `~/.claude/channels/discord/` を使う |
+| コンテキスト使用量の表示 | Discord で `/ctx` と送る。ctx / 5h / 7d の使用率をコードブロックで返す（`/discord-bot:ctx`） |
+| Discord からのクリア | Discord で `/clear` と送る。宣言 → tmux ペインに `/clear` を送信 → 新セッション開始時に「クリアしたよ」を自動投稿（`/discord-bot:clear`） |
+| Bot ステータスに使用量を常時表示 | channel サーバーが Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新。ctx 80% 以上で赤、セッション無しで黄 |
+| サーバー管理 MCP | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（`server-admin`、9 ツール） |
+| チャンネル作成ワークフロー | `/discord-bot:setup-channel`。作成 → access.json の受信設定 → 受信テストまで。作成直後にフックが受信設定を促す |
+| 起動ランチャー | `scripts/start-discord.sh` が tmux セッション `discord` で `claude --channels plugin:discord-bot@ryuki-plugins` を立てる。二重起動は防ぐ |
 
-Claude Code から見たスキル名は `/discord-bot:ctx`・`/discord-bot:clear`・`/discord-bot:setup-channel` です。
-Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません（「コンテキストどれくらい？」「クリアして」でも通ります）。
+Discord 側で送る文字列は `/ctx` と `/clear` で構いません（「コンテキストどれくらい？」「クリアして」でも通ります）。
+本物のスラッシュコマンド（補完付き）は issue #6 で対応予定です。
 
 ## 前提
 
-- 公式 Discord プラグインが設定済みで、Bot トークンが `~/.claude/channels/discord/.env` にあること。
-  サーバー管理 MCP の `DISCORD_GUILD_ID` は省略可。Bot が 1 つのサーバーにしか入っていなければ起動時に自動で判定する。
-  複数のサーバーに入れている場合だけ、同じファイルに `DISCORD_GUILD_ID=<サーバーのID>` を書く
-- tmux と uv が入っていること。Python のスクリプトはすべて `uv run --script` で動きます（shebang に書いてあるので直接実行できます）。
-  常駐スクリプト以外は標準ライブラリだけ、常駐スクリプトは discord.py だけを使います
+- tmux、uv、bun が入っていること。Python のスクリプトは `uv run --script`、channel サーバーは bun で動きます
+- Discord の Bot が作ってあり、Message Content Intent が有効で、サーバーに招待済みであること
+  （作り方は `channel/UPSTREAM-README.md` の Quick Setup 1〜3 と同じ）
 - macOS で動作確認しています。`ps` の使い方が BSD 系前提なので、Linux では微調整が要るかもしれません
 
 ## セットアップ
@@ -49,18 +45,26 @@ cd <Discord セッションに使うプロジェクト>
 claude plugin install discord-bot@ryuki-plugins --scope project
 ```
 
-公式 Discord プラグインも同じ理由でプロジェクトスコープに絞ることを勧めます
-（`~/.claude/settings.json` の `enabledPlugins` から外し、プロジェクトの `.claude/settings.json` で有効にする）。
+GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-bot）から入れる場合は、
+`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot` で marketplace を登録します。
 
-### 2. ステータスラインの JSON を保存する
+公式の Discord プラグイン（`discord@claude-plugins-official`）を使っていた場合は無効にしてください
+（同じトークンで Gateway 接続が 2 本になり、Discord への返信が二重になります）。設定ファイルは共有しているので、
+ペアリングや allowlist はそのまま引き継がれます。
 
-`/ctx` と常駐スクリプトは、Claude Code がステータスライン用に渡してくる JSON
+### 2. Bot トークンとギルド
+
+`/discord-bot:configure <トークン>` で `~/.claude/channels/discord/.env` に保存します（公式プラグインで設定済みならそのまま）。
+サーバー管理 MCP の `DISCORD_GUILD_ID` は省略可です。Bot が 1 つのサーバーにしか入っていなければ起動時に自動で判定します。
+複数のサーバーに入れている場合だけ、同じファイルに `DISCORD_GUILD_ID=<サーバーのID>` を書いてください。
+
+### 3. ステータスラインの JSON を保存する
+
+`/ctx` と Bot ステータス表示は、Claude Code がステータスライン用に渡してくる JSON
 （`context_window` や `rate_limits` を含む）を `~/.claude/tmp/statusline/<session_id>.json` から読みます。
 どちらかの方法で保存されるようにしてください。
 
-- 自分の statusline スクリプトに保存処理を足す。`_dumped_at`（ISO 形式の時刻）と `_claude_pid`
-  （Claude Code 本体の PID。親プロセスをたどって探す）も一緒に入れます。実装例は `scripts/statusline_dump.py` にあります
-- または `settings.json` の `statusLine.command` をラッパー経由にする（`uv` が PATH に無い環境では `/opt/homebrew/bin/uv` のようにフルパスで書く）
+- `settings.json` の `statusLine.command` をラッパー経由にする（`uv` が PATH に無い環境ではフルパスで書く）
 
 ```json
 {
@@ -71,15 +75,13 @@ claude plugin install discord-bot@ryuki-plugins --scope project
 }
 ```
 
-保存が無くても `/ctx` は会話ログから概算を出しますが、5h/7d は出ず、常駐スクリプトも対象を見つけられません。
+- または自分の statusline スクリプトに保存処理を足す。`_dumped_at`（ISO 形式の時刻）と `_claude_pid`
+  （Claude Code 本体の PID。親プロセスをたどって探す）も一緒に入れます。実装例は `scripts/statusline_dump.py` にあります。
+  古いダンプは同スクリプトの `prune_stale_dumps()` が書き込みのたびに消すので、これも写して呼んでください
 
-古いダンプ（Claude Code 本体が終了済みで 24 時間以上更新の無いファイル）は `statusline_dump.py` が
-書き込みのたびに自動で消します。走査はディレクトリ1回だけで、例外は握りつぶすので statusline の表示は
-邪魔しません。自分の statusline スクリプトに保存処理を足す方式を選んだ場合は、`statusline_dump.py` の
-`prune_stale_dumps(dump_dir, keep_path=...)` 関数をそのまま自分のスクリプトへ写し、書き込み直後に
-`keep_path` に今回書いたファイルのパスを渡して呼んでください（`_claude_pid` が無いファイルは更新時刻だけで判定します）。
+保存が無くても `/ctx` は会話ログから概算を出しますが、5h/7d は出ず、Bot ステータスも「セッションなし」のままになります。
 
-### 3. 起動する
+### 4. 起動する
 
 Discord セッションに使うプロジェクトのディレクトリで実行します。`~/.local/bin/discord-start` のような
 シンボリックリンクを作っておくと短く呼べます。
@@ -89,8 +91,9 @@ scripts/start-discord.sh                       # 新規セッション
 scripts/start-discord.sh --resume <session-id> # 会話を引き継ぐ（追加引数はそのまま claude に渡る）
 ```
 
-tmux セッション `discord` に、claude のウィンドウと presence（常駐スクリプト）のウィンドウができます。
-`tmux attach -t discord` で覗けます。止めるときは presence ウィンドウを閉じるだけです。
+tmux セッション `discord` の中で `claude --channels plugin:discord-bot@ryuki-plugins` が動きます。
+初回は DM でペアリングコードが返るので `/discord-bot:access pair <コード>` で承認し、チャンネルごとの受信設定は
+`/discord-bot:access group add <チャンネルID> --no-mention` か `/discord-bot:setup-channel` で行います。
 
 ## 使い方
 
@@ -108,12 +111,15 @@ ctx ■■■■■□□□□□ 54%  544.8K / 1000.0K tokens
 その次のメッセージから新しいセッションになります。作業途中の要点は、クリア前に台帳などへ書いておいてください。
 
 Bot のステータスは Claude が応答するたびに更新されます（ステータスラインが再描画された時点の値を、
-常駐スクリプトが最大 20 秒ごとに拾います）。何もしていない間は変わりません。カード 2 行目の
+channel サーバーが最大 20 秒ごとに拾います）。何もしていない間は変わりません。カード 2 行目の
 「更新 HH:MM」が最後に再描画された時刻です。
+
+チャンネルを増やしたいときは Discord で「〇〇というチャンネル作って」と頼めば `/discord-bot:setup-channel` が
+作成から受信設定、受信テストまで案内します。
 
 ## 仕組み
 
-`/clear` の流れです。
+### /clear の流れ
 
 ```
 Discord「/clear」
@@ -130,15 +136,25 @@ Discord「/clear」
        マーカーを読んで Discord REST API で「クリアしたよ」を投稿し、マーカーを消す
 ```
 
-- `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続（Discord ブリッジ）は残り、セッション ID だけ変わります
+- `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続は残り、セッション ID だけ変わります
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
-- 常駐スクリプトは「cwd が対象プロジェクトで、`_claude_pid` のプロセスが生きているセッション」のうち、
-  `--channels` 付きで起動されたものを優先し、その中で最新のダンプを使います
-- Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
-  playing / watching / listening / competing / custom を選べます（既定 playing。custom は吹き出し表示で狭い）
 
-GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-bot）から入れる場合は、
-`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot` で marketplace を登録します。
+### Bot ステータス
+
+`channel/presence.ts` が、channel サーバーを起動した Claude Code 本体の PID を親プロセスをたどって特定し、
+その PID を `_claude_pid` に持つステータスラインのダンプを 20 秒ごとに読んでアクティビティを更新します
+（見つからなければ、生きているセッションの最新のダンプを使います）。
+Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
+playing（既定）/ watching / listening / competing / custom を選べます（custom は吹き出し表示で狭い）。
+
+### サーバー管理 MCP
+
+`mcp/server-admin/` は Python（FastMCP + httpx）の MCP サーバーで、Discord REST API v10 を直接呼びます。
+ツールは list_channels / create_channel / create_category / edit_channel / delete_channel /
+create_forum_thread / list_threads / close_thread / reopen_thread の 9 つです。
+Claude から見たツール名は `mcp__plugin_discord-bot_server-admin__<tool>` になります。
+`create_channel` の直後には `hooks/remind-channel-access.py` が「access.json に受信設定を入れる」ことを促す注意書きを注入します。
+`requireMention` が `true` のままだとメンション無しの投稿が届かない、という公式プラグインの落とし穴を塞ぐためです。
 
 ## 更新のしかた
 
@@ -150,32 +166,12 @@ cd <Discord セッションに使うプロジェクト>
 claude plugin update discord-bot@ryuki-plugins --scope project
 ```
 
-そのあと、動いている Discord セッションで `/reload-plugins` を打つか、セッションを再起動します。
+そのあと、動いている Discord セッションで `/reload-plugins` を打ちます。channel サーバーもこのとき再起動されます。
 ローカルディレクトリ由来のプラグインはスキル本文を元ディレクトリから直接読んでいるようなので
 （`${CLAUDE_SKILL_DIR}` が元のパスを指す）、`/reload-plugins` だけで反映されることも多いです。
 
-## サーバー管理 MCP
-
-`mcp/server-admin/` にある自作 MCP サーバー（Python + FastMCP + httpx、stdio）が、Discord REST API v10 を
-直接呼び出してチャンネル・カテゴリ・フォーラムスレッドを操作します。公式プラグインと同じ
-`~/.claude/channels/discord/.env` の `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` を読みます
-（環境変数 `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` が既にあればそちらを優先）。
-`DISCORD_GUILD_ID` が無ければ `GET /users/@me/guilds` で参加サーバーを取り、1 件ならそれを使います（0 件・複数はエラーで止まります）。
-
-| ツール | 内容 |
-| --- | --- |
-| `list_channels` | サーバーのチャンネル一覧を取得する |
-| `create_channel` | 新しいチャンネルを作成する（テキスト / アナウンス / フォーラム）。作成したチャンネルは公式プラグインの `access.json` に自動で追加される |
-| `create_category` | チャンネルカテゴリを作成する |
-| `edit_channel` | チャンネルの名前やトピックを変更する |
-| `delete_channel` | チャンネルを削除する。`access.json` からも自動で削除される |
-| `create_forum_thread` | フォーラムチャンネルにスレッドを作成する |
-| `list_threads` | 指定チャンネル（フォーラム等）のアクティブなスレッド一覧を取得する |
-| `close_thread` | スレッドをクローズ（アーカイブ）する。`lock` でロックも可能 |
-| `reopen_thread` | クローズ済みのスレッドを再開する |
-
-Claude Code から見えるツール名は `mcp__plugin_discord-bot_server-admin__<tool>` の形になります
-（`/mcp` かツール一覧で実際の名前を確認してください）。
+channel サーバーの元になった公式プラグインは `discord@claude-plugins-official` の 0.0.4 です。
+上流に変更があったら `channel/server.ts` に取り込みます（差分の要点はファイル先頭のコメントに書いてあります）。
 
 ## 制約と注意
 
@@ -189,23 +185,30 @@ Claude Code から見えるツール名は `mcp__plugin_discord-bot_server-admin
 ```
 .claude-plugin/plugin.json          マニフェスト
 .claude-plugin/marketplace.json     このディレクトリをローカル marketplace として登録するための定義
-.mcp.json                           サーバー管理 MCP（server-admin）の起動定義
-mcp/server-admin/                   サーバー管理 MCP サーバー本体（Python + FastMCP + httpx）
+.mcp.json                           MCP サーバーの登録（discord = channel サーバー、server-admin = サーバー管理）
+channel/                            Discord channel サーバー（公式プラグインのフォーク、Apache-2.0）
+  server.ts                         送受信・アクセス制御・権限中継（上流 0.0.4 + 改変）
+  presence.ts                       Bot ステータスへの使用量表示
+  ACCESS.md / UPSTREAM-README.md    上流のドキュメント
+mcp/server-admin/                   サーバー管理 MCP（Python、uv）
+skills/access/ skills/configure/    アクセス管理とトークン設定（上流のスキルを名前空間だけ変えたもの）
 skills/ctx/                         /discord-bot:ctx
 skills/clear/                       /discord-bot:clear
 skills/setup-channel/               /discord-bot:setup-channel
-hooks/hooks.json                    SessionStart(clear) で完了通知、PostToolUse(create_channel) で受信設定リマインド
-hooks/notify-clear-done.py           完了通知の本体（Discord REST API へ投稿）
-hooks/remind-channel-access.py       受信設定リマインドの本体（access.json の allowFrom を読んで注意書きを注入）
-scripts/discord_presence.py         Bot ステータスに使用量を常時表示する常駐（uv run）
-scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用
-scripts/start-discord.sh            tmux セッション discord に claude と presence を起動するランチャー
-scripts/statusline_dump.py          ステータスライン JSON を保存するラッパー
+hooks/hooks.json                    SessionStart(clear) の完了通知、PostToolUse(create_channel) の受信設定リマインド
+hooks/notify-clear-done.py
+hooks/remind-channel-access.py
+scripts/start-discord.sh            tmux セッション discord に claude を起動するランチャー
+scripts/statusline_dump.py          ステータスライン JSON を保存するラッパー（古いダンプの掃除つき）
+scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用（Presence Intent が必要）
+docs/migration-plan.md              移植の手順書と公開前チェックリスト
 ```
 
-状態ファイルは `~/.claude/discord-bot/`（`pending-clear.json`、`clear-notify.log`）に置きます。
+状態ファイルは `~/.claude/discord-bot/`（`pending-clear.json`、`clear-notify.log`）に、
+Discord の設定は公式プラグインと同じ `~/.claude/channels/discord/`（`.env`、`access.json`）に置きます。
 
 ## ライセンス
 
-MIT License です。公式 Discord プラグイン（`anthropics/claude-plugins-official`）のコードは含んでいません。
-公式は Apache-2.0 なので、将来フォークしたファイルを同梱する場合は、そのファイルだけ Apache-2.0 の表示を残します。
+このリポジトリは MIT License です。ただし `channel/` は公式 Discord プラグイン
+（`anthropics/claude-plugins-official`、Apache-2.0）のフォークなので、そのディレクトリのファイルは
+Apache-2.0 のままです（`channel/LICENSE`）。改変した内容は `channel/server.ts` の先頭に書いてあります。

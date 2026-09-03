@@ -1,7 +1,7 @@
 #!/bin/bash
 # start-discord.sh — Discord セッション一式を tmux セッション "discord" で起動する（discord-bot プラグイン同梱）
-#   claude 側   : claude --channels plugin:discord@claude-plugins-official [追加引数]
-#   presence 側 : uv run <plugin>/scripts/discord_presence.py（Bot のステータスにコンテキスト使用量を表示）
+#   claude --channels plugin:discord-bot@ryuki-plugins [追加引数] を tmux の中で起動する
+#   （Bot のステータス表示は channel サーバーが担当するので常駐スクリプトは無い）
 #
 #   使い方: Discord セッションにしたいプロジェクトのディレクトリで実行する
 #     start-discord.sh                       新規セッションで起動
@@ -11,15 +11,7 @@
 set -u
 SESSION="${DISCORD_TMUX_SESSION:-discord}"
 DIR="$PWD"
-# ~/.local/bin/discord-start のようなシンボリックリンク経由でも実体の scripts/ を指すようにする
-SELF="$0"
-while [ -L "$SELF" ]; do
-  target=$(readlink "$SELF")
-  case "$target" in /*) SELF="$target" ;; *) SELF="$(dirname "$SELF")/$target" ;; esac
-done
-HERE="$(cd "$(dirname "$SELF")" && pwd)"
-CLAUDE_CMD="claude --channels plugin:discord@claude-plugins-official $*"
-PRESENCE_CMD="DISCORD_PRESENCE_CWD='$DIR' uv run '$HERE/discord_presence.py'"
+CLAUDE_CMD="claude --channels plugin:discord-bot@ryuki-plugins $*"
 
 if ! tmux has-session -t "$SESSION" 2>/dev/null; then
   tmux new-session -d -s "$SESSION" -n claude -c "$DIR" "$CLAUDE_CMD"
@@ -33,13 +25,6 @@ elif tmux list-panes -s -t "$SESSION" -F '#{pane_pid}' | xargs -I{} pgrep -P {} 
 else
   tmux new-window -d -t "$SESSION" -n claude -c "$DIR" "$CLAUDE_CMD"
   echo "claude を新しいウィンドウで起動しました（cwd: $DIR）"
-fi
-
-if pgrep -f 'discord_presence.py' >/dev/null; then
-  echo "presence（Bot ステータス更新）は起動済みです"
-else
-  tmux new-window -d -t "$SESSION" -n presence -c "$DIR" "$PRESENCE_CMD"
-  echo "presence を新しいウィンドウで起動しました（対象: $DIR）"
 fi
 
 echo "--- windows ---"

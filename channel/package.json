@@ -1,0 +1,15 @@
+{
+  "name": "discord-bot-channel",
+  "version": "0.5.0",
+  "description": "Discord channel server for Claude Code (forked from anthropics/claude-plugins-official discord 0.0.4, Apache-2.0)",
+  "license": "Apache-2.0",
+  "type": "module",
+  "bin": "./server.ts",
+  "scripts": {
+    "start": "bun install --no-summary && bun server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "discord.js": "^14.14.0"
+  }
+}
