@@ -14,11 +14,12 @@ DIR="$PWD"
 # channel（Discord との送受信）をどのプラグインに任せるか。
 #   official（既定）: 公式 discord@claude-plugins-official を --channels に渡す。フォーク版 channel サーバーは
 #                    プレゼンス表示だけ担当し、スラッシュコマンドは止める（受け付けても Claude に届かないため）
-#   fork            : フォーク版を --dangerously-load-development-channels で読み込む。Claude Code が公式以外の
-#                    channel を既定で捨てるため、このフラグが必要。ただし環境によっては無視される（調査中）
+#   fork            : フォーク版を --channels に渡す。Claude Code は公式以外の channel を既定で捨てるので、
+#                    管理者設定 allowedChannelPlugins で承認しておく（README セットアップ 4）
 MODE="${DISCORD_BOT_CHANNEL_MODE:-official}"
 if [ "${MODE}" = "fork" ]; then
-  CLAUDE_CMD="claude --dangerously-load-development-channels plugin:discord-bot@ryuki-plugins $*"
+  # 管理者設定 allowedChannelPlugins で承認済みの前提。--channels で普通に渡す
+  CLAUDE_CMD="claude --channels plugin:discord-bot@ryuki-plugins $*"
 else
   CLAUDE_CMD="DISCORD_SLASH_COMMANDS=off claude --channels plugin:discord@claude-plugins-official $*"
 fi
