@@ -191,7 +191,10 @@ cd <Discord セッションに使うプロジェクト>
 claude plugin update discord-bot@ryuki-plugins --scope project
 ```
 
-そのあと、動いている Discord セッションで `/reload-plugins` を打ちます。channel サーバーもこのとき再起動されます。
+そのあと、動いている Discord セッションで `/reload-plugins` を打つとスキルとフックが入れ替わります。
+ただし MCP サーバー（channel サーバーと server-admin）は、`.mcp.json` の設定が変わらない限り `/reload-plugins` では
+再起動されません。`channel/` や `mcp/` のコードを変えたときや、`~/.claude/discord-bot/commands.json` に
+コマンドを足したときは、セッションを再起動してください（`scripts/start-discord.sh --resume <session-id>` で会話は引き継げます）。
 ローカルディレクトリ由来のプラグインはスキル本文を元ディレクトリから直接読んでいるようなので
 （`${CLAUDE_SKILL_DIR}` が元のパスを指す）、`/reload-plugins` だけで反映されることも多いです。
 
