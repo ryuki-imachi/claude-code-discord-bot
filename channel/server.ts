@@ -8,6 +8,7 @@
  *   - skill names /discord:access -> /discord-bot:access (plugin namespace)
  *   - presence.ts: show Claude Code context usage in the bot's activity (startPresence on clientReady)
  *   - 'ready' -> 'clientReady' (discord.js 14.27 deprecation)
+ *   - commands.ts: slash commands (/ctx, /clear, ...) forwarded to Claude as skill invocations
  */
 /**
  * Discord channel for Claude Code.
@@ -35,15 +36,18 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ActionRowBuilder,
+  MessageFlags,
   type Message,
   type Attachment,
   type Interaction,
+  type ChatInputCommandInteraction,
 } from 'discord.js'
 import { randomBytes } from 'crypto'
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, statSync, renameSync, realpathSync, chmodSync } from 'fs'
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { startPresence } from './presence'
+import { registerSlashCommands, toSkillInvocation, type CommandDef } from './commands'
 
 const STATE_DIR = process.env.DISCORD_STATE_DIR ?? join(homedir(), '.claude', 'channels', 'discord')
 const ACCESS_FILE = join(STATE_DIR, 'access.json')
@@ -756,6 +760,10 @@ client.on('error', err => {
 // `perm:allow:<id>`, `perm:deny:<id>`, or `perm:more:<id>`.
 // Security mirrors the text-reply path: allowFrom must contain the sender.
 client.on('interactionCreate', async (interaction: Interaction) => {
+  if (interaction.isChatInputCommand()) {
+    await handleSlashCommand(interaction).catch(e => process.stderr.write(`discord channel: slash command failed: ${e}\n`))
+    return
+  }
   if (!interaction.isButton()) return
   const m = /^perm:(allow|deny|more):([a-km-z]{5})$/.exec(interaction.customId)
   if (!m) return
@@ -812,6 +820,54 @@ client.on('interactionCreate', async (interaction: Interaction) => {
     .update({ content: `${interaction.message.content}\n\n${label}`, components: [] })
     .catch(() => {})
 })
+
+// Slash command → Claude へのスキル呼び出し。送信者は allowFrom に居ること、
+// 送信先はチャンネル受信設定（groups）済みか DM であること（reply ツールの出口ゲートと揃える）。
+// 3 秒以内に ephemeral で受け付けを返し、結果は Claude が reply ツールで通常のメッセージとして投稿する。
+async function handleSlashCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  const access = loadAccess()
+  if (!access.allowFrom.includes(interaction.user.id)) {
+    await interaction.reply({ content: 'Not authorized.', flags: MessageFlags.Ephemeral }).catch(() => {})
+    return
+  }
+  const ch = interaction.channel
+  const isDM = !interaction.inGuild()
+  if (!isDM) {
+    const key = ch && 'isThread' in ch && ch.isThread() ? ch.parentId ?? interaction.channelId : interaction.channelId
+    if (!(key in access.groups)) {
+      await interaction
+        .reply({ content: 'このチャンネルは受信設定されていません。/discord-bot:setup-channel か /discord-bot:access group add で登録してください。', flags: MessageFlags.Ephemeral })
+        .catch(() => {})
+      return
+    }
+  }
+  const invocation = toSkillInvocation(slashCommands, interaction)
+  if (!invocation) {
+    await interaction.reply({ content: '未登録のコマンドです。', flags: MessageFlags.Ephemeral }).catch(() => {})
+    return
+  }
+  await interaction.reply({ content: `受け付けたよ: ${invocation}`, flags: MessageFlags.Ephemeral }).catch(() => {})
+  if (isDM) dmChannelUsers.set(interaction.channelId, interaction.user.id)
+  if ('sendTyping' in (ch ?? {})) {
+    void (ch as { sendTyping: () => Promise<void> }).sendTyping().catch(() => {})
+  }
+  mcp.notification({
+    method: 'notifications/claude/channel',
+    params: {
+      content: invocation,
+      meta: {
+        chat_id: interaction.channelId,
+        user: interaction.user.username,
+        user_id: interaction.user.id,
+        ts: interaction.createdAt.toISOString(),
+        via: 'slash_command',
+        command: interaction.commandName,
+      },
+    },
+  }).catch(err => {
+    process.stderr.write(`discord channel: failed to deliver slash command to Claude: ${err}\n`)
+  })
+}
 
 client.on('messageCreate', msg => {
   if (msg.author.bot) return
@@ -901,9 +957,12 @@ async function handleInbound(msg: Message): Promise<void> {
   })
 }
 
+let slashCommands: CommandDef[] = []
+
 client.once('clientReady', c => {
   process.stderr.write(`discord channel: gateway connected as ${c.user.tag}\n`)
   startPresence(c)
+  void registerSlashCommands(c).then(defs => { slashCommands = defs })
 })
 
 client.login(TOKEN).catch(err => {
