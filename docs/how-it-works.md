@@ -80,5 +80,6 @@ Claude Code は `--channels` に渡された channel プラグインを承認リ
 - 管理者設定 `allowedChannelPlugins` に同じ形式で書く（README のセットアップ 4）。管理者設定が承認リストの代わりになります
 - `--dangerously-load-development-channels plugin:discord-bot@ryuki-plugins` を付けて起動する。起動時に
   「WARNING: Loading development channels」の確認が出て、承認すると読み込まれます。ただし 2026-09-03 の検証では
-  この環境（Claude Max、macOS、tmux）で確認ダイアログが出ずフラグが無視されました。条件は未特定です。
+  この環境（Claude Max、macOS、tmux）で確認ダイアログが出ずフラグが無視されました。同じ症状が
+  anthropics/claude-code#82939 で報告されています。
   `--channels` と両方に同じプラグインを渡すと `--channels` 側で判定されて弾かれるので、付けるなら開発フラグだけにします

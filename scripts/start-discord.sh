@@ -1,6 +1,6 @@
 #!/bin/bash
 # start-discord.sh — Discord セッション一式を tmux セッション "discord" で起動する（discord-bot プラグイン同梱）
-#   DISCORD_BOT_CHANNEL_MODE=official（既定）なら公式プラグインを channel に、fork ならフォーク版を channel にして起動する
+#   DISCORD_BOT_CHANNEL_MODE=fork（既定）ならフォーク版を、official なら公式プラグインを channel にして起動する
 #   （Bot のステータス表示は channel サーバーが担当するので常駐スクリプトは無い）
 #
 #   使い方: Discord セッションにしたいプロジェクトのディレクトリで実行する
@@ -12,11 +12,11 @@ set -u
 SESSION="${DISCORD_TMUX_SESSION:-discord}"
 DIR="$PWD"
 # channel（Discord との送受信）をどのプラグインに任せるか。
-#   official（既定）: 公式 discord@claude-plugins-official を --channels に渡す。フォーク版 channel サーバーは
+#   official        : 公式 discord@claude-plugins-official を --channels に渡す。フォーク版 channel サーバーは
 #                    プレゼンス表示だけ担当し、スラッシュコマンドは止める（受け付けても Claude に届かないため）
-#   fork            : フォーク版を --channels に渡す。Claude Code は公式以外の channel を既定で捨てるので、
+#   fork（既定）    : フォーク版を --channels に渡す。Claude Code は公式以外の channel を既定で捨てるので、
 #                    管理者設定 allowedChannelPlugins で承認しておく（README セットアップ 4）
-MODE="${DISCORD_BOT_CHANNEL_MODE:-official}"
+MODE="${DISCORD_BOT_CHANNEL_MODE:-fork}"
 if [ "${MODE}" = "fork" ]; then
   # 管理者設定 allowedChannelPlugins で承認済みの前提。--channels で普通に渡す
   CLAUDE_CMD="claude --channels plugin:discord-bot@ryuki-plugins $*"
