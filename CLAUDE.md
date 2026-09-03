@@ -5,6 +5,9 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 開発ルール
 
+- Discord セッションの起動・終了・再起動（`discord-start`、`/exit`、`/reload-plugins` の送信、管理者設定の作成）は開発者が自分の
+  ターミナルで行う。Claude はコマンドを提示するだけで、tmux 経由で他のセッションを操作しない（2026-09-03 に検証目的で
+  Claude が操作したのは例外。以後は開発者が主体）
 - 作業は GitHub の issue 単位で進める（https://github.com/ryuki-imachi/claude-code-discord-bot/issues）。
   issue ごとに `main` から `issue-<番号>-<短い英語>` のブランチを切り、終わったら PR を作って `main` にマージする。
   `main` に直接コミットしない
@@ -33,7 +36,9 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 残り・次の一歩（2026-09-03 15:00 時点。開発者が PC に戻ったら上から順に）:
   1. リュウキのターミナルで起動したままの `claude --dangerously-load-development-channels ...` を `/exit` で閉じる（受信せずスラッシュコマンドだけ空返事する状態）
   2. 管理者設定で承認する（要 sudo）。README セットアップ 4 のコマンドで `/Library/Application Support/ClaudeCode/managed-settings.json` を作る
-  3. Claude に「承認したから fork で再起動して」と伝える → こちらで `DISCORD_BOT_CHANNEL_MODE=fork` で再起動し、Discord の通常メッセージ・/ctx・/task で確認する
+  3. tmux の claude を `/exit` で閉じ、discord-workspace で `DISCORD_BOT_CHANNEL_MODE=fork discord-start --resume <session-id>` を実行する
+     （session-id は閉じる前に `/status` か statusline ダンプで確認。新規でよければ `--resume` 無し）。起動バナーに警告行が無いことを見て、
+     Discord の通常メッセージ・/ctx・/task を試す
   4. 開発フラグの確認ダイアログが出ない件を anthropics/claude-code に issue で報告するか決める（本文はこちらで用意できる）
   5. #8 の Public 化の可否を決める
 - 現在の稼働: tmux の `discord` セッションで公式プラグインを channel にして応答中（ランチャー既定 official）。フォーク版はプレゼンス表示のみ
