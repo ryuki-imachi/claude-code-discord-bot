@@ -7,8 +7,10 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 - 変更したら `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` の version を上げてコミットし、
   discord-workspace で `claude plugin update discord-session@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
-- Python は `uv run --script` で実行する（shebang `#!/usr/bin/env -S uv run --script` と inline metadata を付ける）。
-  `python3` 直叩きや bash 内の `python3 -c` は使わない
+- bash と Python は処理内容で選ぶ。プロセス・tmux・ファイルの操作は bash、JSON や HTTP、日時計算のように
+  構造化データを扱う処理は Python。片方の中にもう片方を埋め込む（bash 内の `python3 -c` など）くらいなら一本に寄せる。
+  無理に統一しない
+- Python を使うときは `uv run --script` で動かす（shebang `#!/usr/bin/env -S uv run --script` と inline metadata を付ける）
 - 検証は tmux 内の使い捨てセッションで行う。`--channels` 付きの claude を 2 つ立てない（Discord に二重返信する）
 - 作業の区切りごとに「現在の状況」を更新してコミットする
 - ユーザー固有の値（Discord のユーザー ID、チャンネル ID、ギルド ID）をスクリプトやスキルに直書きしない。

@@ -64,8 +64,8 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
    - 「CLAUDE.md のチャンネル構成表を更新」「memory/active-threads.md にセクション追加」は
      「プロジェクトの CLAUDE.md や台帳にチャンネル一覧があれば更新する」という一般化した表現にする
 2. `discord-workspace/.claude/hooks/remind-channel-access.sh` → `discord-session/hooks/remind-channel-access.sh`
-   - 注入する文面のユーザー ID を access.json から読むように。フックは notify-clear-done.py と同じく
-     `uv run --script` の Python で書く（bash + python3 の混在にしない）
+   - 注入する文面のユーザー ID を access.json から読むように。JSON を読んで文面を組む処理なので Python
+     （`uv run --script`）が向く。`jq` だけで済むなら bash のままでもよい
    - `hooks/hooks.json` に PostToolUse（matcher: 新しい create_channel のツール名）を追加
 3. discord-workspace 側から skill と hook、settings.json の PostToolUse エントリを削除。CLAUDE.md の
    「新規作成時は必ず /setup-channel の手順に従い」を `/discord-session:setup-channel` に書き換える
@@ -91,7 +91,7 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
 
 ### ライセンス
 
-- 自作コードのライセンスを決めて `LICENSE` を置く。MIT を推奨（依存と公式プラグインのどちらとも矛盾しない）
+- ライセンスは MIT に決定し `LICENSE` を置いた（2026-09-03）。`plugin.json` にも `license` を記載済み
 - 依存ライブラリは配布に含めず `uv run` で取得するので、表記義務は実質無い。参考: discord.py は MIT、mcp は MIT、
   httpx は BSD-3-Clause、python-dotenv は BSD-3-Clause、aiohttp は Apache-2.0 と MIT
 - 公式 Discord プラグイン（`anthropics/claude-plugins-official`）は Apache-2.0。今のプラグインは公式のコードを含んで
@@ -112,8 +112,19 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
   （2026-09-03 に文書から除去し、コミット履歴も書き換え済み）。設定は `~/.claude/channels/discord/` から読む
 - `/Users/ryuki/...` のような絶対パスは `<plugin>` や `~/path/to/...` に置き換える。Bot 名 kuroko-chan も「あなたの Bot」に直す
 - `plugin.json` の author email は GitHub の noreply アドレスなのでそのままでよい
-- 公開直前に `git log --all -p | grep -E '[0-9]{17,19}|sk-ant|DISCORD_BOT_TOKEN='` で履歴ごと確認する。
-  不安なら orphan ブランチで履歴を一本化してから push する
+- 履歴は 2026-09-03 時点で走査済み（ID・トークンとも無し）。公開直前にもう一度確認する
+
+```sh
+git log --all -p | grep -E '[0-9]{17,19}|sk-ant|DISCORD_BOT_TOKEN=' || echo clean
+```
+
+  履歴を残したくない場合は orphan ブランチで一本化してから push する（元の履歴はローカルの `main-local` に残す）
+
+```sh
+git branch main-local
+git checkout --orphan public && git commit -m "discord-session v<version>"
+git branch -D main && git branch -m main
+```
 
 ### 規約
 

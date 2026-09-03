@@ -165,3 +165,8 @@ scripts/statusline_dump.py          ステータスライン JSON を保存す�
 ```
 
 状態ファイルは `~/.claude/discord-session/`（`pending-clear.json`、`clear-notify.log`）に置きます。
+
+## ライセンス
+
+MIT License です。公式 Discord プラグイン（`anthropics/claude-plugins-official`）のコードは含んでいません。
+公式は Apache-2.0 なので、将来フォークしたファイルを同梱する場合は、そのファイルだけ Apache-2.0 の表示を残します。
