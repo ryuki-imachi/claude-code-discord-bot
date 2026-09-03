@@ -13,7 +13,7 @@ All state lives in `~/.claude/channels/discord/access.json`. The `/discord:acces
 | | |
 | --- | --- |
 | Default policy | `pairing` |
-| Sender ID | User snowflake (numeric, e.g. `184695080709324800`) |
+| Sender ID | User snowflake (numeric, e.g. `<user-id>`) |
 | Group key | Channel snowflake — not guild ID |
 | Config file | `~/.claude/channels/discord/access.json` |
 
@@ -33,13 +33,13 @@ All state lives in `~/.claude/channels/discord/access.json`. The `/discord:acces
 
 ## User IDs
 
-Discord identifies users by **snowflakes**: permanent numeric IDs like `184695080709324800`. Usernames are mutable; snowflakes aren't. The allowlist stores snowflakes.
+Discord identifies users by **snowflakes**: permanent numeric IDs like `<user-id>`. Usernames are mutable; snowflakes aren't. The allowlist stores snowflakes.
 
 Pairing captures the ID automatically. To add someone manually, enable **User Settings → Advanced → Developer Mode** in Discord, then right-click any user and choose **Copy User ID**. Your own ID is available by right-clicking your avatar in the lower-left.
 
 ```
-/discord:access allow 184695080709324800
-/discord:access remove 184695080709324800
+/discord:access allow <user-id>
+/discord:access remove <user-id>
 ```
 
 ## Guild channels
@@ -47,15 +47,15 @@ Pairing captures the ID automatically. To add someone manually, enable **User Se
 Guild channels are off by default. Opt each one in individually, keyed on the **channel** snowflake (not the guild). Threads inherit their parent channel's opt-in; no separate entry needed. Find channel IDs the same way as user IDs: Developer Mode, right-click the channel, Copy Channel ID.
 
 ```
-/discord:access group add 846209781206941736
+/discord:access group add <channel-id>
 ```
 
 With the default `requireMention: true`, the bot responds only when @mentioned or replied to. Pass `--no-mention` to process every message in the channel, or `--allow id1,id2` to restrict which members can trigger it.
 
 ```
-/discord:access group add 846209781206941736 --no-mention
-/discord:access group add 846209781206941736 --allow 184695080709324800,221773638772129792
-/discord:access group rm 846209781206941736
+/discord:access group add <channel-id> --no-mention
+/discord:access group add <channel-id> --allow <user-id>,<user-id-2>
+/discord:access group rm <channel-id>
 ```
 
 ## Mention detection
@@ -96,11 +96,11 @@ Configure outbound behavior with `/discord:access set <key> <value>`.
 | `/discord:access` | Print current state: policy, allowlist, pending pairings, enabled channels. |
 | `/discord:access pair a4f91c` | Approve pairing code `a4f91c`. Adds the sender to `allowFrom` and sends a confirmation on Discord. |
 | `/discord:access deny a4f91c` | Discard a pending code. The sender is not notified. |
-| `/discord:access allow 184695080709324800` | Add a user snowflake directly. |
-| `/discord:access remove 184695080709324800` | Remove from the allowlist. |
+| `/discord:access allow <user-id>` | Add a user snowflake directly. |
+| `/discord:access remove <user-id>` | Remove from the allowlist. |
 | `/discord:access policy allowlist` | Set `dmPolicy`. Values: `pairing`, `allowlist`, `disabled`. |
-| `/discord:access group add 846209781206941736` | Enable a guild channel. Flags: `--no-mention`, `--allow id1,id2`. |
-| `/discord:access group rm 846209781206941736` | Disable a guild channel. |
+| `/discord:access group add <channel-id>` | Enable a guild channel. Flags: `--no-mention`, `--allow id1,id2`. |
+| `/discord:access group rm <channel-id>` | Disable a guild channel. |
 | `/discord:access set ackReaction 🔨` | Set a config key: `ackReaction`, `replyToMode`, `textChunkLimit`, `chunkMode`, `mentionPatterns`. |
 
 ## Config file
@@ -113,11 +113,11 @@ Configure outbound behavior with `/discord:access set <key> <value>`.
   "dmPolicy": "pairing",
 
   // User snowflakes allowed to DM.
-  "allowFrom": ["184695080709324800"],
+  "allowFrom": ["<user-id>"],
 
   // Guild channels the bot is active in. Empty object = DM-only.
   "groups": {
-    "846209781206941736": {
+    "<channel-id>": {
       // true: respond only to @mentions and replies.
       "requireMention": true,
       // Restrict triggers to these senders. Empty = any member (subject to requireMention).

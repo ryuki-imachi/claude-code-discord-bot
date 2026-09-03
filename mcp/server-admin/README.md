@@ -34,5 +34,5 @@ mcp/server-admin/
 
 ## 移植元
 
-`~/Desktop/work/claude-discord-channel/original-tools/` にあった同名プロジェクトを、
+`~/path/to/claude-code-discord-bot/` と並ぶディレクトリの `original-tools/` にあった同名プロジェクトを、
 discord-bot プラグイン（issue #1）に取り込んだもの。元の `.venv` は作り直し、コミット履歴は引き継いでいない。
