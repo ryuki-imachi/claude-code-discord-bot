@@ -21,9 +21,9 @@ Discord のチャンネル機能は 1 つのセッションを開きっぱなし
 | Bot ステータスに使用量を常時表示 | 済 | 常駐スクリプトが Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新。ctx 80% 以上で赤、セッション無しで黄 |
 | 起動ランチャー | 済 | `start-discord.sh` が tmux セッション `discord` に claude と常駐スクリプトを立てる。二重起動は防ぐ |
 | サーバー管理 MCP | 済 | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（9 ツール）。`.mcp.json` で `server-admin` として自動起動 |
-| チャンネル作成ワークフロー | 移植予定 | チャンネルを作ったあと、公式プラグインの `access.json` に受信設定を入れて受信テストまで行うスキルと、忘れ防止フック |
+| チャンネル作成ワークフロー | 済 | Discord で「チャンネル作って」など。`/discord-bot:setup-channel` が作成 → `access.json` に受信設定を登録 → 受信テストまで行う。`create_channel` 実行直後には PostToolUse フックが受信設定を忘れないよう注意書きを差し込む |
 
-Claude Code から見たスキル名は `/discord-bot:ctx` と `/discord-bot:clear` です。
+Claude Code から見たスキル名は `/discord-bot:ctx`・`/discord-bot:clear`・`/discord-bot:setup-channel` です。
 Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません（「コンテキストどれくらい？」「クリアして」でも通ります）。
 
 ## 前提
@@ -193,8 +193,10 @@ Claude Code から見えるツール名は `mcp__plugin_discord-bot_server-admin
 mcp/server-admin/                   サーバー管理 MCP サーバー本体（Python + FastMCP + httpx）
 skills/ctx/                         /discord-bot:ctx
 skills/clear/                       /discord-bot:clear
-hooks/hooks.json                    SessionStart(clear) で完了通知
+skills/setup-channel/               /discord-bot:setup-channel
+hooks/hooks.json                    SessionStart(clear) で完了通知、PostToolUse(create_channel) で受信設定リマインド
 hooks/notify-clear-done.py           完了通知の本体（Discord REST API へ投稿）
+hooks/remind-channel-access.py       受信設定リマインドの本体（access.json の allowFrom を読んで注意書きを注入）
 scripts/discord_presence.py         Bot ステータスに使用量を常時表示する常駐（uv run）
 scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用
 scripts/start-discord.sh            tmux セッション discord に claude と presence を起動するランチャー

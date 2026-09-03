@@ -12,7 +12,7 @@
       "name": "discord-bot",
       "source": "./",
       "description": "kuroko-chan の中身。Discord チャンネルセッションのコンテキスト管理（/ctx・/clear・Bot ステータス表示）",
-      "version": "0.3.1"
+      "version": "0.4.0"
     }
   ]
 }
