@@ -13,6 +13,8 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 着手時に issue の「やること」を読み、完了時に受け入れ条件を実際に確認してから PR を出す。PR 本文に `Closes #<番号>` を書く
 - 変更したら `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` の version を上げてコミットし、
   discord-workspace で `claude plugin update discord-bot@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
+  `/reload-plugins` で入れ替わるのはスキルとフックだけ。channel/ や mcp/ のコード、commands.json を変えたときは
+  セッションを再起動する（`discord-start --resume <session-id>`）。再起動しないと古いコードが動き続ける
 - bash と Python は処理内容で選ぶ。プロセス・tmux・ファイルの操作は bash、JSON や HTTP、日時計算のように
   構造化データを扱う処理は Python。片方の中にもう片方を埋め込む（bash 内の `python3 -c` など）くらいなら一本に寄せる。
   無理に統一しない
