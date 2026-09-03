@@ -71,6 +71,49 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
    「新規作成時は必ず /setup-channel の手順に従い」を `/discord-session:setup-channel` に書き換える
 4. version を上げて update → `/reload-plugins` → Discord から「テスト用チャンネル作って」で通しテスト → テストチャンネル削除
 
+## 手順 3（構想）. 公式プラグインをフォークして Bot 本体にし、スラッシュコマンドを載せる
+
+2026-09-03 の相談メモ。実施時期は未定。
+
+### なぜフォークが要るか
+
+Discord のスラッシュコマンド（アプリケーションコマンド）は `interactionCreate` イベントとして、
+Gateway に接続している Bot プロセスにしか届かない。公式プラグインの server.ts は `messageCreate` だけを
+Claude に転送し、Bot 自身の投稿（`author.bot`）は捨てるので、別プロセスからコマンドの内容を流し込む手段が無い。
+本物のスラッシュコマンドでクロコのスキルを叩くには、Claude に繋がる Bot プロセスそのものを自前にするしかない。
+
+### 形
+
+- 公式 server.ts（Bun + discord.js + MCP SDK、Apache-2.0）をこのプラグインに取り込み、`claude/channel` を
+  宣言する MCP サーバーとして `.mcp.json` に登録する。公式プラグインは無効化して Gateway 接続を 1 本にする
+- 取り込んだファイルには Apache-2.0 の表示と変更点を残す（公開前チェックリスト参照）
+- プレゼンス更新（discord_presence.py の中身）を server.ts に統合する。常駐スクリプトと tmux の presence ウィンドウが不要になる
+- コマンドは `src/commands/<name>.ts` に 1 ファイル 1 コマンドで置き、`deploy.ts` で Discord に登録する。
+  この構造は https://github.com/caru-ini/discord-bot-template（Bun + discord.js + Biome、MIT）の
+  `commands/`・`events/`・`deploy.ts` の分け方を参考にする。Docker / Railway 周りは不要（Claude Code の下で stdio で動く）
+- interaction を受けたら 3 秒以内に `deferReply`（または「受け付けたよ」の ephemeral 返信）し、
+  `notifications/claude/channel` で Claude に `/discord-bot:ctx` のようなスキル呼び出し文を content として送る。
+  meta に chat_id と interaction のトークンを入れ、reply ツールで通常のチャンネル投稿として返す
+  （interaction の follow-up は 15 分で失効するので、長い作業は普通の投稿に倒す）
+
+### コマンド候補
+
+- `/ctx`、`/clear`（既存スキルをそのまま）
+- `/channel new name type category`（setup-channel）
+- `/task add|list|done`（task-memo）、`/threads sync`（sync-threads）など、ワークスペース側のスキルも
+  引数付きで呼べるようにする。スキル本体はワークスペースに残し、コマンドは「スキル名と引数を Claude に渡す」だけにする
+
+### 名前
+
+中身が「クロコ（Discord サーバー管理 Bot）の本体」になるので、`discord-session` は狭い。
+候補は次のとおり（決定はリュウキ）。
+
+- リポジトリ `claude-code-discord-bot`、プラグイン名 `discord-bot`（スキルは `/discord-bot:ctx`）: 説明的で、公開向き
+- リポジトリ `kuroko`、プラグイン名 `kuroko`（`/kuroko:ctx`）: 短くて愛着があるが、他人には中身が伝わらない
+
+改名はリポジトリ名（`gh repo rename`）、`plugin.json` と `marketplace.json` の name、
+discord-workspace の `enabledPlugins` のキーと CLAUDE.md の参照、再インストールで済む。履歴が浅い今のうちにやるのが楽
+
 ## 注意
 
 - `--channels` 付きの claude を検証用に 2 つ立てない（二重返信）。検証は `--channels` 無しの使い捨てセッションで行う
