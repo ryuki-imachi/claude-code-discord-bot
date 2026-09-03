@@ -11,7 +11,7 @@
 | issue | 内容 | この文書の節 | 推奨モデル |
 | --- | --- | --- | --- |
 | #1 | サーバー管理 MCP をプラグインに取り込む | 手順 1 の 1〜3 | Sonnet 5 |
-| #2 | discord-workspace を切り替え、グローバル登録を外す | 手順 1 の 4〜8 | Sonnet 5 |
+| #2 | discord-workspace を切り替え・グローバル登録を外す | 手順 1 の 4〜8 | Sonnet 5 |
 | #3 | setup-channel とフックの移植 | 手順 2 | Sonnet 5 |
 | #4 | ギルド ID の自動判定 | 手順 1 の 2（代案） | Sonnet 5 |
 | #5 | 公式フォークとプレゼンス統合 | 手順 3 | Fable 5.1 |
@@ -27,9 +27,9 @@
 
 | 対象 | 行き先 | 理由 |
 | --- | --- | --- |
-| サーバー管理 MCP（original-tools、9 ツール） | プラグイン `.mcp.json` | 公式に無い機能で汎用。今はグローバル登録のため無関係なセッションでも起動している |
-| setup-channel スキル + remind-channel-access フック | プラグイン | 公式プラグインの access.json 受信設定の穴を塞ぐ汎用ワークフロー。ユーザー ID の直書きだけ直す |
-| sync-threads / close-article-thread / save-knowledge / task-memo / inject-ledgers | discord-workspace に残す | memory/ の台帳、knowledge/、#記事の種 のチャンネル ID に依存した運用そのもの |
+| サーバー管理 MCP（original-tools・9 ツール） | プラグイン `.mcp.json` | 公式に無い機能で汎用<br>今はグローバル登録のため無関係なセッションでも起動している |
+| setup-channel スキル + remind-channel-access フック | プラグイン | 公式プラグインの access.json 受信設定の穴を塞ぐ汎用ワークフロー<br>ユーザー ID の直書きだけ直す |
+| sync-threads / close-article-thread / save-knowledge / task-memo / inject-ledgers | discord-workspace に残す | memory/ の台帳・knowledge/・#記事の種 のチャンネル ID に依存した運用そのもの |
 
 ## 手順 1. サーバー管理 MCP の移植
 
