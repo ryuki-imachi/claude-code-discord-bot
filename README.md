@@ -1,12 +1,36 @@
 # discord-bot
 
-リュウキの Discord サーバー管理 Bot「kuroko-chan」の中身です。Claude Code のプラグインとして動きます。
+開発者が運用している Discord サーバー管理 Bot「kuroko-chan」の中身です。Claude Code のプラグインとして動きます。
 Discord 社および Anthropic 社とは無関係の、非公式なコミュニティ製プラグインです。
 
 Claude Code の Discord チャンネル機能（`claude --channels ...`）は、Discord のメッセージを Claude の会話に流し込みます。
 公式の Discord プラグインはメッセージの送受信だけを担当していて、セッションの管理（コンテキストの残量確認やクリア）や
 サーバーの管理（チャンネルやスレッドの操作）はできません。このプラグインは、公式プラグインの channel サーバーを
 フォークして土台にし、その上にセッション管理・サーバー管理・Bot ステータス表示を足したものです。
+
+## 背景と考え方
+
+このプラグインは、Claude Code の Channels 機能を試したところから始まっています。スマホの Discord から、PC で動いている Claude Code のセッションにメッセージを送って作業を頼める、というのが Channels の体験で、開発者は学習用の Discord サーバーを Claude Code に整備してもらう使い方を目指しました。ところが公式プラグインはメッセージの送受信しかできず、チャンネルの作成や削除といったサーバー管理はできません。そこで Discord REST API を直接呼ぶ MCP サーバーを自作したのが最初の一歩です（今の `mcp/server-admin/`）。
+
+開発者の Claude Code の使い方は、手を動かしながら対話するローカルのセッションと、依頼を投げて報告を受け取る非同期の窓口としての Discord 常駐セッションの二本立てです。常駐側には、何をきっかけに動くかを書いたタスク台帳や、スレッドごとの目的と状態を記した台帳を持たせ、状況をファイルに書いて git で共有することで、場所をまたいでも続きができるようにしています。この運用の中で一番の困りごとが、常駐セッションのコンテキストが読み込みのたびに膨らみ続けることでした。
+
+もう一つの出発点は、Channels のセッションを開きっぱなしにする運用そのものです。同じセッションで会話を続けるとコンテキストが溜まり続けますが、チャンネル経由では `/clear` が効きません。残量を Discord から見られるようにし、クリアも Discord から頼めるようにし、Bot のステータスに残量を常時出す、というのがセッション管理の機能群です。最後に、公式プラグインの channel サーバーをフォークして土台にすることで、スラッシュコマンドとプレゼンス表示を 1 つの Bot にまとめました。
+
+作りながら大事にしてきたのは次のことです。
+
+- スマホから頼んで PC が働く、を成立させる。ターミナルを開かずに済むことを優先する（許可の自動化、Discord からのクリア、状態の可視化）
+- 公式プラグインの仕組みと設定（`access.json`、`.env`）をそのまま使い、置き換えではなく拡張として振る舞う。フォークした channel サーバーも設定を共有する
+- 壊れやすい操作は慎重に。削除系だけは確認を挟む、二重起動を防ぐ、といった小さな安全策を積む
+- 依存を増やさない。MCP サーバーは httpx で REST を直接呼ぶ（discord.py は FastMCP のイベントループと競合する）、Python は uv、TypeScript は bun
+- 学習目的なので、仕組みが読めることを優先し、README と設計メモに判断の理由を残す
+
+開発の経緯と、常駐セッションの運用の全体像は次の記事に書いています。
+
+https://qiita.com/ryu-ki/items/e89507c5fe497540339c
+
+https://qiita.com/ryu-ki/items/66fae78d3c92388d9f69
+
+https://qiita.com/ryu-ki/items/1668e67b8d3cf43c4e0a
 
 ## 機能
 
@@ -35,18 +59,23 @@ Claude Code の Discord チャンネル機能（`claude --channels ...`）は、
 
 ### 1. プラグインを入れる
 
-このリポジトリ自体がローカル marketplace（`ryuki-plugins`）になっています。Discord セッションに使う
-プロジェクトのディレクトリで、プロジェクトスコープで有効化します。全プロジェクトで有効にしないのは、
-プラグインの MCP サーバーが有効なセッション全部で立ち上がり、同じ Bot トークンで何本も接続してしまうためです。
+GitHub のリポジトリから marketplace を登録し、プロジェクトスコープで有効化します。全プロジェクトで
+有効にしないのは、プラグインの MCP サーバーが有効なセッション全部で立ち上がり、同じ Bot トークンで
+何本も接続してしまうためです。
 
 ```sh
-claude plugin marketplace add ~/Desktop/work/claude-discord-channel/discord-bot
+claude plugin marketplace add ryuki-imachi/claude-code-discord-bot
 cd <Discord セッションに使うプロジェクト>
 claude plugin install discord-bot@ryuki-plugins --scope project
 ```
 
-GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-bot）から入れる場合は、
-`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot` で marketplace を登録します。
+開発するときは、このリポジトリ自体をローカル marketplace として登録するとローカルの変更をすぐ試せます。
+
+```sh
+claude plugin marketplace add ~/path/to/claude-code-discord-bot
+cd <Discord セッションに使うプロジェクト>
+claude plugin install discord-bot@ryuki-plugins --scope project
+```
 
 公式の Discord プラグイン（`discord@claude-plugins-official`）を使っていた場合は無効にしてください
 （同じトークンで Gateway 接続が 2 本になり、Discord への返信が二重になります）。設定ファイルは共有しているので、
@@ -70,7 +99,7 @@ GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-
 {
   "statusLine": {
     "type": "command",
-    "command": "uv run ~/Desktop/work/claude-discord-channel/discord-bot/scripts/statusline_dump.py -- <元のコマンド>"
+    "command": "uv run ~/path/to/claude-code-discord-bot/scripts/statusline_dump.py -- <元のコマンド>"
   }
 }
 ```

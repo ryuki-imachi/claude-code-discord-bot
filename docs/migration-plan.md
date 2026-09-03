@@ -21,7 +21,7 @@
 ## 方針
 
 公式 Discord プラグインに無い自作機能のうち、汎用的なものをこのプラグインへ集め、
-kuroko-chan の運用ルールと台帳に依存するものは discord-workspace に残す。
+あなたの Bot の運用ルールと台帳に依存するものは discord-workspace に残す。
 
 | 対象 | 行き先 | 理由 |
 | --- | --- | --- |
@@ -170,9 +170,18 @@ discord-workspace の `enabledPlugins` のキーと CLAUDE.md の参照、再イ
 - Bot トークンを絶対に含めない。`.env` と `.venv/` は `.gitignore` 済み。MCP を移植するとき `original-tools/.env` は移動しない
 - Discord のユーザー ID・チャンネル ID・ギルド ID は個人のサーバーを特定できるので、コードにも文書にも書かない
   （2026-09-03 に文書から除去し、コミット履歴も書き換え済み）。設定は `~/.claude/channels/discord/` から読む
+  → 済（2026-09-03）: `channel/ACCESS.md` の例示スノーフレークもプレースホルダ（`<user-id>` 等）に置き換え、
+  `git grep -nE '[0-9]{17,19}'` のヒットが `uv.lock` のハッシュ以外に無いことを確認した
 - `/Users/ryuki/...` のような絶対パスは `<plugin>` や `~/path/to/...` に置き換える。Bot 名 kuroko-chan も「あなたの Bot」に直す
+  → 済（2026-09-03）: README・docs・SKILL.md・スクリプトコメントの絶対パスを一般化。plugin.json/marketplace.json の
+  description と migration-plan.md の kuroko-chan 言及もあなたの Bot に置き換え、README 冒頭の一文だけ残した。
+  本人の個人名の呼称も README・CLAUDE.md・docs・SKILL.md・marketplace.json からユーザー/開発者に置き換え、
+  検索でヒットが無いことを確認した
 - `plugin.json` の author email は GitHub の noreply アドレスなのでそのままでよい
 - 履歴は 2026-09-03 時点で走査済み（ID・トークンとも無し）。公開直前にもう一度確認する
+  → 済（2026-09-03）: `git log --all -p | grep -E ...` を再実行。ヒットは `channel/ACCESS.md` の旧サンプルスノーフレーク、
+  `.env` の書式例（`DISCORD_BOT_TOKEN=MTIz...` 等のプレースホルダ）、このチェックリスト自身の grep コマンド文字列のみで、
+  実際の ID・トークンは無かった
 
 ```sh
 git log --all -p | grep -E '[0-9]{17,19}|sk-ant|DISCORD_BOT_TOKEN=' || echo clean
@@ -196,4 +205,9 @@ git branch -D main && git branch -m main
 ### 同梱物の確認
 
 - `original-tools/docs/design.md` などに個人サーバーの情報が無いか読む
+  → 済（2026-09-03）: `mcp/server-admin/docs/design.md` と `mcp/server-admin/README.md` を確認。サーバー名・
+  チャンネル名の一覧・実際の ID は無く、技術的な設計の記述のみだったので変更なし
+- README のセットアップ手順を GitHub 経由（`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot`）を
+  第一の方法にし、ローカルパスでの登録は「開発するとき」の方法として後ろに回す
+  → 済（2026-09-03）
 - `qiita-article/` の画像は記事用なので公開リポジトリに入れない
