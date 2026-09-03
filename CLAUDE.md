@@ -5,6 +5,12 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 開発ルール
 
+- 作業は GitHub の issue 単位で進める（https://github.com/ryuki-imachi/claude-code-discord-bot/issues）。
+  issue ごとに `main` から `issue-<番号>-<短い英語>` のブランチを切り、終わったら PR を作って `main` にマージする。
+  `main` に直接コミットしない
+- issue には推奨モデルをラベルで付けてある（`model:sonnet` / `model:opus` / `model:fable`）。ラベルより上のモデルで
+  やる分には構わない。着手時にそのモデルで難しいと感じたら、無理に進めず issue にコメントを残して止める
+- 着手時に issue の「やること」を読み、完了時に受け入れ条件を実際に確認してから PR を出す。PR 本文に `Closes #<番号>` を書く
 - 変更したら `.claude-plugin/plugin.json` と `.claude-plugin/marketplace.json` の version を上げてコミットし、
   discord-workspace で `claude plugin update discord-bot@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
 - bash と Python は処理内容で選ぶ。プロセス・tmux・ファイルの操作は bash、JSON や HTTP、日時計算のように
@@ -22,8 +28,7 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 完了済み: v0.1.1。`/discord-bot:ctx`、`/discord-bot:clear` と完了通知フック、Bot ステータスへの使用量表示
   （アクティビティ表示）、ランチャー `start-discord.sh`（`~/.local/bin/discord-start`）、statusline ラッパー、README。
   discord-workspace にプロジェクトスコープでインストール済みで、稼働中の Discord セッションでも読み込み済み
-- 残り・次の一歩: docs/migration-plan.md の手順 1（original-tools のサーバー管理 MCP を `.mcp.json` へ移植）から。
-  続けて手順 2（setup-channel とフックの移植）。実施は 2026-09-03 以降にリュウキの合図で
+- 残り・次の一歩: issue #1（サーバー管理 MCP の取り込み）から順に。issue #1〜#4 が手順 1・2、#5〜#7 が手順 3、#8 が公開、#9 が小物
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）、
   `~/Desktop/work/claude-discord-channel/original-tools/`（移植元）、Discord の雑談チャンネル

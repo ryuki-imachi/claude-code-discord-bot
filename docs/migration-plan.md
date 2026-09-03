@@ -2,6 +2,22 @@
 
 作成: 2026-09-03（実施は 9/3 以降）
 
+## issue との対応
+
+2026-09-03 に GitHub の issue に切り出した。作業はこちらを正とする（https://github.com/ryuki-imachi/claude-code-discord-bot/issues）。
+
+| issue | 内容 | この文書の節 | 推奨モデル |
+| --- | --- | --- | --- |
+| #1 | サーバー管理 MCP をプラグインに取り込む | 手順 1 の 1〜3 | Sonnet 5 |
+| #2 | discord-workspace を切り替え、グローバル登録を外す | 手順 1 の 4〜8 | Sonnet 5 |
+| #3 | setup-channel とフックの移植 | 手順 2 | Sonnet 5 |
+| #4 | ギルド ID の自動判定 | 手順 1 の 2（代案） | Sonnet 5 |
+| #5 | 公式フォークとプレゼンス統合 | 手順 3 | Fable 5.1 |
+| #6 | スラッシュコマンド /ctx /clear | 手順 3 | Opus 5 |
+| #7 | ワークスペース用スキルのコマンド化 | 手順 3 | Opus 5 |
+| #8 | 公開準備 | 公開前チェックリスト | Sonnet 5 |
+| #9 | statusline ダンプの掃除 | なし | Sonnet 5 |
+
 ## 方針
 
 公式 Discord プラグインに無い自作機能のうち、汎用的なものをこのプラグインへ集め、
