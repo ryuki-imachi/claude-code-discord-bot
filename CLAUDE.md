@@ -24,14 +24,14 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 現在の状況
 
-- 最終更新: 2026-09-03（issue #1 対応。PR 作成済み・未マージ）
-- 完了済み: v0.1.1。`/discord-bot:ctx`、`/discord-bot:clear` と完了通知フック、Bot ステータスへの使用量表示
-  （アクティビティ表示）、ランチャー `start-discord.sh`（`~/.local/bin/discord-start`）、statusline ラッパー、README。
-  discord-workspace にプロジェクトスコープでインストール済みで、稼働中の Discord セッションでも読み込み済み
-- issue #1: `original-tools/` をコピーして `mcp/server-admin/` へ取り込み、`.mcp.json`（サーバー名 `server-admin`）を追加。
-  トークン/ギルド ID の読み込みを「環境変数 → `~/.claude/channels/discord/.env`」の順に変更。version は 0.3.0。
-  `original-tools/` はまだ削除していない（issue #2 で対応）
-- 残り・次の一歩: issue #1 の PR マージ後、issue #2〜#4 が手順 1・2、#5〜#7 が手順 3、#8 が公開、#9 が小物
+- 最終更新: 2026-09-03（issue #3 対応。PR 作成済み・未マージ）
+- 完了済み: v0.1.1 の基本機能（`/discord-bot:ctx`、`/discord-bot:clear` と完了通知フック、Bot ステータスへの使用量表示、
+  ランチャー `start-discord.sh`、statusline ラッパー、README）に加え、issue #1（サーバー管理 MCP の取り込み）、
+  #2（discord-workspace の切り替え）、#4（ギルド ID 自動判定）、#9（statusline ダンプの掃除）、
+  #3（`/discord-bot:setup-channel` スキルと `remind-channel-access.py` フックの移植）
+- issue #3: `skills/setup-channel/SKILL.md` を移植し、ユーザー ID の直書きを access.json のトップレベル `allowFrom`
+  参照に置き換えた。`hooks/remind-channel-access.py`（PostToolUse、access.json を読んで受信設定の注意書きを注入）を追加
+- 残り・次の一歩: issue #3 の PR マージ後、issue #5（公式フォークとプレゼンス統合）に進む
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）、
-  `~/Desktop/work/claude-discord-channel/original-tools/`（移植元）、Discord の雑談チャンネル
+  Discord の雑談チャンネル

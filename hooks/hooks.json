@@ -11,6 +11,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__plugin_discord-bot_server-admin__create_channel",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:$PATH\" \"${CLAUDE_PLUGIN_ROOT}/hooks/remind-channel-access.py\"",
+            "statusMessage": "受信設定のリマインドを準備中"
+          }
+        ]
+      }
     ]
   }
 }
