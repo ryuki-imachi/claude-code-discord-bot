@@ -33,14 +33,9 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
   #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合、#6 スラッシュコマンド /ctx /clear、
   #7 ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、#8 のうち個人環境の記述の一般化と履歴走査（v0.6.1）
-- 残り・次の一歩（2026-09-03 15:00 時点。開発者が PC に戻ったら上から順に）:
-  1. リュウキのターミナルで起動したままの `claude --dangerously-load-development-channels ...` を `/exit` で閉じる（受信せずスラッシュコマンドだけ空返事する状態）
-  2. 管理者設定で承認する（要 sudo）。README セットアップ 4 のコマンドで `/Library/Application Support/ClaudeCode/managed-settings.json` を作る
-  3. tmux の claude を `/exit` で閉じ、discord-workspace で `DISCORD_BOT_CHANNEL_MODE=fork discord-start --resume <session-id>` を実行する
-     （session-id は閉じる前に `/status` か statusline ダンプで確認。新規でよければ `--resume` 無し）。起動バナーに警告行が無いことを見て、
-     Discord の通常メッセージ・/ctx・/task を試す
-  4. 開発フラグの確認ダイアログが出ない件を anthropics/claude-code に issue で報告するか決める（本文はこちらで用意できる）
-  5. #8 の Public 化の可否を決める
-- 現在の稼働: tmux の `discord` セッションで公式プラグインを channel にして応答中（ランチャー既定 official）。フォーク版はプレゼンス表示のみ
+- 残り・次の一歩: Discord 側の動作確認（通常メッセージ・/ctx スラッシュコマンド・/task）を開発者が行う → 問題なければ
+  開発フラグの確認ダイアログが出ない件の issue 報告の可否と、#8 の Public 化の可否を決める
+- 現在の稼働（2026-09-03 19:46）: 管理者設定 allowedChannelPlugins で承認したうえで、`DISCORD_BOT_CHANNEL_MODE=fork discord-start` で起動。
+  フォーク版 channel サーバーが「Channel notifications registered」になり、公式プラグインは使っていない
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）
