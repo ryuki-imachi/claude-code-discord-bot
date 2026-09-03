@@ -87,9 +87,9 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
    「新規作成時は必ず /setup-channel の手順に従い」を `/discord-bot:setup-channel` に書き換える
 4. version を上げて update → `/reload-plugins` → Discord から「テスト用チャンネル作って」で通しテスト → テストチャンネル削除
 
-## 手順 3（構想）. 公式プラグインをフォークして Bot 本体にし、スラッシュコマンドを載せる
+## 手順 3. 公式プラグインをフォークして Bot 本体にし、スラッシュコマンドを載せる
 
-2026-09-03 の相談メモ。実施時期は未定。
+2026-09-03 の相談メモ。フォークとプレゼンス統合（#5）は同日に実施済み（v0.5.0、`channel/`）。スラッシュコマンドは #6 #7。
 
 ### なぜフォークが要るか
 

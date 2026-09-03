@@ -6,7 +6,7 @@ argument-hint: ""
 allowed-tools:
   - Bash(${CLAUDE_SKILL_DIR}/scripts/context_usage.py *)
   - Bash(${CLAUDE_SKILL_DIR}/scripts/context_usage.py)
-  - mcp__plugin_discord_discord__reply
+  - mcp__plugin_discord-bot_discord__reply
 ---
 
 # コンテキスト使用量の確認スキル

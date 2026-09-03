@@ -7,7 +7,7 @@ allowed-tools:
   - Bash(${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py *)
   - Bash(${CLAUDE_PLUGIN_ROOT}/skills/ctx/scripts/context_usage.py)
   - Bash(${CLAUDE_SKILL_DIR}/scripts/clear_session.sh *)
-  - mcp__plugin_discord_discord__reply
+  - mcp__plugin_discord-bot_discord__reply
 ---
 
 # Discord からの /clear 実行スキル

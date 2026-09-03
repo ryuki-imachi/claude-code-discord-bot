@@ -24,14 +24,9 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 現在の状況
 
-- 最終更新: 2026-09-03（issue #3 対応。PR 作成済み・未マージ）
-- 完了済み: v0.1.1 の基本機能（`/discord-bot:ctx`、`/discord-bot:clear` と完了通知フック、Bot ステータスへの使用量表示、
-  ランチャー `start-discord.sh`、statusline ラッパー、README）に加え、issue #1（サーバー管理 MCP の取り込み）、
-  #2（discord-workspace の切り替え）、#4（ギルド ID 自動判定）、#9（statusline ダンプの掃除）、
-  #3（`/discord-bot:setup-channel` スキルと `remind-channel-access.py` フックの移植）
-- issue #3: `skills/setup-channel/SKILL.md` を移植し、ユーザー ID の直書きを access.json のトップレベル `allowFrom`
-  参照に置き換えた。`hooks/remind-channel-access.py`（PostToolUse、access.json を読んで受信設定の注意書きを注入）を追加
-- 残り・次の一歩: issue #3 の PR マージ後、issue #5（公式フォークとプレゼンス統合）に進む
+- 最終更新: 2026-09-03
+- 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
+  #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合（v0.5.0）
+- 残り・次の一歩: #6 スラッシュコマンド /ctx /clear → #7 ワークスペース用スキルのコマンド化 → #8 公開準備
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
-- 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）、
-  Discord の雑談チャンネル
+- 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）

@@ -12,8 +12,8 @@ allowed-tools:
   - mcp__plugin_discord-bot_server-admin__create_channel
   - mcp__plugin_discord-bot_server-admin__create_category
   - mcp__plugin_discord-bot_server-admin__list_channels
-  - mcp__plugin_discord_discord__reply
-  - mcp__plugin_discord_discord__fetch_messages
+  - mcp__plugin_discord-bot_discord__reply
+  - mcp__plugin_discord-bot_discord__fetch_messages
 ---
 
 # Discordチャンネル新規作成ワークフロー
