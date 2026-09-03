@@ -1,5 +1,7 @@
 # Claude Code 用 Discord Bot プラグイン（discord-bot）
 
+*A Claude Code plugin that turns a Discord bot into a remote front-end for a Claude Code session: check context usage and clear the session from Discord, show usage in the bot's status, manage server channels, and run skills via slash commands. Forked from the official Discord channel plugin. Documentation is in Japanese.*
+
 開発者が運用している Discord サーバー管理 Bot「kuroko-chan」の中身です。Claude Code のプラグインとして動きます。
 Discord 社および Anthropic 社とは無関係の、非公式なコミュニティ製プラグインです。
 
@@ -25,8 +27,9 @@ Claude Code の Discord チャンネル機能（`claude --channels ...`）は、
 
 ## セットアップ
 
-前提は tmux、uv、bun と、Message Content Intent を有効にしてサーバーに招待済みの Discord Bot です
-（Bot の作り方は `channel/UPSTREAM-README.md` の Quick Setup 1〜3 と同じ）。macOS で動作確認しています。
+前提は tmux、uv、bun と、Discord の Bot です。Bot は Message Content Intent を有効にし、`bot` と `applications.commands` の
+2 つのスコープでサーバーに招待してください（`applications.commands` が無いとスラッシュコマンドを登録できません）。
+Bot の作り方は `channel/UPSTREAM-README.md` の Quick Setup 1〜3 と同じです。macOS で動作確認しています。
 
 1. Discord セッションに使うプロジェクトのディレクトリで、プロジェクトスコープで有効化します。
    公式の Discord プラグインを使っていた場合は無効にしてください（同じトークンで接続が 2 本になり、返信が二重になります）。
@@ -68,18 +71,19 @@ claude plugin install discord-bot@ryuki-plugins --scope project
 }
 ```
 
-   書かない場合は、`DISCORD_BOT_CHANNEL_MODE=official` のまま公式プラグインを channel に使い、このプラグインは
+   書かない場合は、`DISCORD_BOT_CHANNEL_MODE=official` を付けて起動すると公式プラグインを channel に使い、このプラグインは
    Bot ステータス表示・サーバー管理 MCP・スキルだけを担当します（スラッシュコマンドは使えません）。
 
-5. プロジェクトのディレクトリで起動します。承認リストに載せたら `DISCORD_BOT_CHANNEL_MODE=fork` を付けてください。
-   tmux セッション `discord` の中で claude が動きます。初回は DM のペアリングコードを
+5. プロジェクトのディレクトリで起動します。tmux セッション `discord` の中で claude が動きます。初回は DM のペアリングコードを
    `/discord-bot:access pair <コード>` で承認してください。
 
 ```sh
-export DISCORD_BOT_CHANNEL_MODE=fork   # 承認リストに載せた場合。省略時は official
 ~/path/to/claude-code-discord-bot/scripts/start-discord.sh                       # 新規
 ~/path/to/claude-code-discord-bot/scripts/start-discord.sh --resume <session-id> # 会話を引き継ぐ
 ```
+
+起動画面の上のほうに「messages from plugin:discord-bot@ryuki-plugins inject directly in this session」と出て、
+その下に「not on the approved channels allowlist」の行が無ければ、Discord からのメッセージが届く状態です。
 
 ## 使い方
 
