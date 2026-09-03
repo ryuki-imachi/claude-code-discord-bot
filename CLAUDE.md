@@ -31,13 +31,15 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 現在の状況
 
-- 最終更新: 2026-09-03
-- 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
-  #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合、#6 スラッシュコマンド /ctx /clear、
-  #7 ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、#8 のうち個人環境の記述の一般化と履歴走査（v0.6.1）
-- 残り・次の一歩: 無し（2026-09-03 に Public 化して #8 を完了）。開発フラグの不具合は anthropics/claude-code#82939 で既報のため報告しない（2026-09-03 判断）。
+- 最終更新: 2026-09-04
+- 完了済み: issue #1〜#9 をすべてクローズ。サーバー管理 MCP の取り込み、discord-workspace の切り替え、
+  setup-channel とフックの移植、ギルド ID 自動判定、ダンプ掃除、公式 Discord プラグインのフォーク（channel/、Apache-2.0）と
+  プレゼンス統合、スラッシュコマンド /ctx /clear、ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、公開準備
+- issue の外で実施: docs/diagrams/ に構成図と処理フロー図を追加（drawio と PNG）、README の文章と表を整理（v0.6.7）
+- 残り・次の一歩: 無し。開発フラグの不具合は anthropics/claude-code#82939 で既報のため報告しない（2026-09-03 判断）
+- 現在の稼働: 管理者設定 allowedChannelPlugins で承認したうえで `DISCORD_BOT_CHANNEL_MODE=fork discord-start` で起動する。
+  フォーク版 channel サーバーが「Channel notifications registered」になり、公式プラグインは使っていない。
   Discord 側の動作確認は 2026-09-03 19:50 に完了（通常メッセージ、/ctx と /task のスラッシュコマンドで結果が投稿されることを確認）
-- 現在の稼働（2026-09-03 19:46）: 管理者設定 allowedChannelPlugins で承認したうえで、`DISCORD_BOT_CHANNEL_MODE=fork discord-start` で起動。
-  フォーク版 channel サーバーが「Channel notifications registered」になり、公式プラグインは使っていない
-- リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
+- リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（2026-09-03 に Public 化）。
+  ローカルの marketplace 登録はディレクトリ参照のままで、GitHub 経由には切り替えていない
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）
