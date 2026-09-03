@@ -2,7 +2,7 @@
 
 ## /clear の流れ
 
-![/clear flow](diagrams/clear-flow.png)
+![/clear の流れ](diagrams/clear-flow.png)
 
 - `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続は残り、セッション ID だけ変わります
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
@@ -10,7 +10,7 @@
 
 ## Bot ステータス
 
-![Presence data flow](diagrams/presence.png)
+![Bot ステータスのデータの流れ](diagrams/presence.png)
 
 `channel/presence.ts` が、channel サーバーを起動した Claude Code 本体の PID を親プロセスをたどって特定し、
 その PID を `_claude_pid` に持つステータスラインのダンプを 20 秒ごとに読んでアクティビティを更新します
@@ -21,7 +21,7 @@ playing（既定）/ watching / listening / competing / custom を選べます�
 
 ## スラッシュコマンド
 
-![Slash command flow](diagrams/slash-command.png)
+![スラッシュコマンドの流れ](diagrams/slash-command.png)
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
 定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
