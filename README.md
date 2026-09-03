@@ -29,7 +29,8 @@ Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません
 ## 前提
 
 - 公式 Discord プラグインが設定済みで、Bot トークンが `~/.claude/channels/discord/.env` にあること。
-  サーバー管理 MCP を使うには、同じファイルに `DISCORD_GUILD_ID=<サーバーのID>` も書く
+  サーバー管理 MCP の `DISCORD_GUILD_ID` は省略可。Bot が 1 つのサーバーにしか入っていなければ起動時に自動で判定する。
+  複数のサーバーに入れている場合だけ、同じファイルに `DISCORD_GUILD_ID=<サーバーのID>` を書く
 - tmux と uv が入っていること。Python のスクリプトはすべて `uv run --script` で動きます（shebang に書いてあるので直接実行できます）。
   常駐スクリプト以外は標準ライブラリだけ、常駐スクリプトは discord.py だけを使います
 - macOS で動作確認しています。`ps` の使い方が BSD 系前提なので、Linux では微調整が要るかもしれません
@@ -159,6 +160,7 @@ claude plugin update discord-bot@ryuki-plugins --scope project
 直接呼び出してチャンネル・カテゴリ・フォーラムスレッドを操作します。公式プラグインと同じ
 `~/.claude/channels/discord/.env` の `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` を読みます
 （環境変数 `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` が既にあればそちらを優先）。
+`DISCORD_GUILD_ID` が無ければ `GET /users/@me/guilds` で参加サーバーを取り、1 件ならそれを使います（0 件・複数はエラーで止まります）。
 
 | ツール | 内容 |
 | --- | --- |
