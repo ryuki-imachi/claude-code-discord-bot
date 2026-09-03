@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "server-admin": {
+      "command": "uv",
+      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}/mcp/server-admin", "python", "-m", "discord_mcp.server"]
+    }
+  }
+}

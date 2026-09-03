@@ -20,7 +20,7 @@ Discord のチャンネル機能は 1 つのセッションを開きっぱなし
 | Discord からのクリア | 済 | Discord で `/clear` と送る。宣言 → tmux ペインに `/clear` を送信 → 新セッション開始時に「クリアしたよ」を自動投稿 |
 | Bot ステータスに使用量を常時表示 | 済 | 常駐スクリプトが Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新。ctx 80% 以上で赤、セッション無しで黄 |
 | 起動ランチャー | 済 | `start-discord.sh` が tmux セッション `discord` に claude と常駐スクリプトを立てる。二重起動は防ぐ |
-| サーバー管理 MCP | 移植予定 | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（9 ツール）。現在は `original-tools` として別管理 |
+| サーバー管理 MCP | 済 | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（9 ツール）。`.mcp.json` で `server-admin` として自動起動 |
 | チャンネル作成ワークフロー | 移植予定 | チャンネルを作ったあと、公式プラグインの `access.json` に受信設定を入れて受信テストまで行うスキルと、忘れ防止フック |
 
 Claude Code から見たスキル名は `/discord-bot:ctx` と `/discord-bot:clear` です。
@@ -28,7 +28,8 @@ Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません
 
 ## 前提
 
-- 公式 Discord プラグインが設定済みで、Bot トークンが `~/.claude/channels/discord/.env` にあること
+- 公式 Discord プラグインが設定済みで、Bot トークンが `~/.claude/channels/discord/.env` にあること。
+  サーバー管理 MCP を使うには、同じファイルに `DISCORD_GUILD_ID=<サーバーのID>` も書く
 - tmux と uv が入っていること。Python のスクリプトはすべて `uv run --script` で動きます（shebang に書いてあるので直接実行できます）。
   常駐スクリプト以外は標準ライブラリだけ、常駐スクリプトは discord.py だけを使います
 - macOS で動作確認しています。`ps` の使い方が BSD 系前提なので、Linux では微調整が要るかもしれません
@@ -146,6 +147,28 @@ claude plugin update discord-bot@ryuki-plugins --scope project
 ローカルディレクトリ由来のプラグインはスキル本文を元ディレクトリから直接読んでいるようなので
 （`${CLAUDE_SKILL_DIR}` が元のパスを指す）、`/reload-plugins` だけで反映されることも多いです。
 
+## サーバー管理 MCP
+
+`mcp/server-admin/` にある自作 MCP サーバー（Python + FastMCP + httpx、stdio）が、Discord REST API v10 を
+直接呼び出してチャンネル・カテゴリ・フォーラムスレッドを操作します。公式プラグインと同じ
+`~/.claude/channels/discord/.env` の `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` を読みます
+（環境変数 `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` が既にあればそちらを優先）。
+
+| ツール | 内容 |
+| --- | --- |
+| `list_channels` | サーバーのチャンネル一覧を取得する |
+| `create_channel` | 新しいチャンネルを作成する（テキスト / アナウンス / フォーラム）。作成したチャンネルは公式プラグインの `access.json` に自動で追加される |
+| `create_category` | チャンネルカテゴリを作成する |
+| `edit_channel` | チャンネルの名前やトピックを変更する |
+| `delete_channel` | チャンネルを削除する。`access.json` からも自動で削除される |
+| `create_forum_thread` | フォーラムチャンネルにスレッドを作成する |
+| `list_threads` | 指定チャンネル（フォーラム等）のアクティブなスレッド一覧を取得する |
+| `close_thread` | スレッドをクローズ（アーカイブ）する。`lock` でロックも可能 |
+| `reopen_thread` | クローズ済みのスレッドを再開する |
+
+Claude Code から見えるツール名は `mcp__plugin_discord-bot_server-admin__<tool>` の形になります
+（`/mcp` かツール一覧で実際の名前を確認してください）。
+
 ## 制約と注意
 
 - Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` を送れず、Claude がその旨を Discord に伝えます
@@ -158,6 +181,8 @@ claude plugin update discord-bot@ryuki-plugins --scope project
 ```
 .claude-plugin/plugin.json          マニフェスト
 .claude-plugin/marketplace.json     このディレクトリをローカル marketplace として登録するための定義
+.mcp.json                           サーバー管理 MCP（server-admin）の起動定義
+mcp/server-admin/                   サーバー管理 MCP サーバー本体（Python + FastMCP + httpx）
 skills/ctx/                         /discord-bot:ctx
 skills/clear/                       /discord-bot:clear
 hooks/hooks.json                    SessionStart(clear) で完了通知

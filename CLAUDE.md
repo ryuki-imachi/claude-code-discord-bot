@@ -24,11 +24,14 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 現在の状況
 
-- 最終更新: 2026-09-03（GitHub へ push 済み）
+- 最終更新: 2026-09-03（issue #1 対応。PR 作成済み・未マージ）
 - 完了済み: v0.1.1。`/discord-bot:ctx`、`/discord-bot:clear` と完了通知フック、Bot ステータスへの使用量表示
   （アクティビティ表示）、ランチャー `start-discord.sh`（`~/.local/bin/discord-start`）、statusline ラッパー、README。
   discord-workspace にプロジェクトスコープでインストール済みで、稼働中の Discord セッションでも読み込み済み
-- 残り・次の一歩: issue #1（サーバー管理 MCP の取り込み）から順に。issue #1〜#4 が手順 1・2、#5〜#7 が手順 3、#8 が公開、#9 が小物
+- issue #1: `original-tools/` をコピーして `mcp/server-admin/` へ取り込み、`.mcp.json`（サーバー名 `server-admin`）を追加。
+  トークン/ギルド ID の読み込みを「環境変数 → `~/.claude/channels/discord/.env`」の順に変更。version は 0.3.0。
+  `original-tools/` はまだ削除していない（issue #2 で対応）
+- 残り・次の一歩: issue #1 の PR マージ後、issue #2〜#4 が手順 1・2、#5〜#7 が手順 3、#8 が公開、#9 が小物
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）、
   `~/Desktop/work/claude-discord-channel/original-tools/`（移植元）、Discord の雑談チャンネル
