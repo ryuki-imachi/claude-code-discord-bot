@@ -2,33 +2,70 @@
 
 ## /clear の流れ
 
-```
-Discord「/clear」
-  → Claude が /discord-bot:clear を実行
-     1. context_usage.py で使用量を取得
-     2. reply「クリアするね（今 54%）」
-     3. clear_session.sh --chat-id <chat_id>
-          CLAUDE_PID → その TTY → 同じ TTY を持つ tmux ペイン を特定
-          ~/.claude/discord-bot/pending-clear.json にマーカーを書く
-          tmux send-keys '/clear' Enter（ターン中なのでキューされる）
-     4. ツールを呼ばずにターンを終える
-  → キューされた /clear が実行され、新しいセッションが始まる
-  → SessionStart(clear) フック notify-clear-done.py
-       マーカーを読んで Discord REST API で「クリアしたよ」を投稿し、マーカーを消す
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant D as Discord
+    participant CH as channel server
+    participant CL as Claude (session A)
+    participant T as tmux pane
+    participant CL2 as Claude (session B)
+    participant HK as SessionStart hook
+
+    U->>D: /clear
+    D->>CH: message
+    CH->>CL: channel notification
+    CL->>CH: reply "clearing (ctx 54%)"
+    CH->>D: post
+    CL->>T: clear_session.sh: write marker, send-keys "/clear"
+    Note over T: queued until the turn ends
+    T->>CL2: /clear starts a new session
+    CL2->>HK: SessionStart(source=clear)
+    HK->>HK: read marker (chat_id)
+    HK->>D: POST "cleared" via REST
+    HK-->>CL2: context: "started by /clear from Discord"
 ```
 
 - `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続は残り、セッション ID だけ変わります
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
+- 送り先の特定は `CLAUDE_PID` → その TTY → 同じ TTY を持つ tmux ペイン、の順です。tmux の外では NG を返します
 
 ## Bot ステータス
 
+```mermaid
+flowchart LR
+    CC["Claude Code"] -->|"statusline JSON<br/>on every render"| W["statusline_dump.py"]
+    W -->|"session_id.json<br/>+ _claude_pid"| DIR["~/.claude/tmp/statusline/"]
+    DIR -->|"pick dump whose _claude_pid<br/>is this session's parent"| PR["presence.ts<br/>(every 20s)"]
+    PR -->|"setPresence<br/>ctx 53% · 5h 46% · 7d 17%"| D["Discord"]
+```
+
 `channel/presence.ts` が、channel サーバーを起動した Claude Code 本体の PID を親プロセスをたどって特定し、
 その PID を `_claude_pid` に持つステータスラインのダンプを 20 秒ごとに読んでアクティビティを更新します
-（見つからなければ、生きているセッションの最新のダンプを使います）。
+（見つからなければ、生きているセッションの最新のダンプを使います）。ctx 80% 以上で取り込み中（赤）、
+対象が無ければ退席中（黄）です。
 Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
 playing（既定）/ watching / listening / competing / custom を選べます（custom は吹き出し表示で狭い）。
 
 ## スラッシュコマンド
+
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant D as Discord
+    participant CH as channel server
+    participant CL as Claude
+
+    Note over CH: on startup: register commands<br/>from commands.json (+ ~/.claude/discord-bot/commands.json)
+    U->>D: /task text: list
+    D->>CH: interaction
+    CH->>CH: sender in allowFrom?<br/>channel opted in?
+    CH-->>U: ephemeral "accepted: /task-memo list"
+    CH->>CL: channel notification<br/>"/task-memo list" (via=slash_command)
+    CL->>CL: run skill
+    CL->>CH: reply
+    CH->>D: post result
+```
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
 定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
