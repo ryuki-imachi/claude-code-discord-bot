@@ -1,3 +1,5 @@
+<!-- Forked from anthropics/claude-plugins-official (discord 0.0.4, Apache-2.0). Modified: skill names use the discord-bot namespace, and example snowflake IDs were replaced with placeholders. -->
+
 # Discord — Access & Delivery
 
 Discord only allows DMs between accounts that share a server. Who can DM your bot depends on where it's installed: one private server means only that server's members can reach it; a public community means every member there can open a DM.
