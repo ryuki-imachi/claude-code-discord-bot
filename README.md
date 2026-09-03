@@ -13,32 +13,7 @@ Claude Code の Discord チャンネル機能（`claude --channels ...`）は、
 
 ## 全体像
 
-```mermaid
-flowchart LR
-    U[User on Discord] <-->|messages, slash commands| D[Discord]
-    D <-->|Gateway / REST| CH
-
-    subgraph P["discord-bot plugin"]
-        CH["channel server<br/>(fork of official, bun)"]
-        SA["server-admin MCP<br/>(Python, uv)"]
-        SK["skills: ctx, clear,<br/>setup-channel, access"]
-        HK["hooks: notify-clear-done,<br/>remind-channel-access"]
-    end
-
-    subgraph CC["Claude Code session (tmux)"]
-        CL[Claude]
-        SL["statusline JSON<br/>~/.claude/tmp/statusline/"]
-    end
-
-    CH -->|"channel notifications"| CL
-    CL -->|"reply / react / fetch"| CH
-    CL -->|"create_channel, list_threads, ..."| SA
-    SA -->|REST| D
-    CL --> SK
-    CC -.->|"SessionStart / PostToolUse"| HK
-    SL -->|"read every 20s"| CH
-    CH -->|"presence: ctx 53% · 5h 46%"| D
-```
+![Architecture](docs/diagrams/architecture.png)
 
 ## 機能
 
