@@ -13,7 +13,7 @@ Claude Code の Discord チャンネル機能（`claude --channels ...`）は、
 
 ## 全体像
 
-![Architecture](docs/diagrams/architecture.png)
+![全体構成](docs/diagrams/architecture.png)
 
 ## 機能
 
