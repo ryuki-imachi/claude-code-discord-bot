@@ -45,5 +45,5 @@ ${CLAUDE_SKILL_DIR}/scripts/clear_session.sh --chat-id <chat_id>
   `claude --channels plugin:discord@claude-plugins-official` として動かす前提（`scripts/start-discord.sh` が面倒を見る）
 - /clear 後もプロセスと MCP 接続（Discord ブリッジ）はそのまま残る。セッション ID だけ新しくなる
 - 完了通知はフック経由なので、プラグインを入れ替えたあとは Discord セッションの再起動が必要
-- ターミナルで手動 /clear した場合は通知されない（マーカー `~/.claude/discord-session/pending-clear.json` が無いため）
+- ターミナルで手動 /clear した場合は通知されない（マーカー `~/.claude/discord-bot/pending-clear.json` が無いため）
 - /compact は対象外

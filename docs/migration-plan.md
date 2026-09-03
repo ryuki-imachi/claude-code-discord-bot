@@ -1,4 +1,4 @@
-# 自作機能の discord-session プラグインへの集約 手順書
+# 自作機能の discord-bot プラグインへの集約 手順書
 
 作成: 2026-09-03（実施は 9/3 以降）
 
@@ -21,7 +21,7 @@ kuroko-chan の運用ルールと台帳に依存するものは discord-workspac
 ツール: list_channels / create_channel / create_category / edit_channel / delete_channel /
 create_forum_thread / list_threads / close_thread / reopen_thread。
 
-1. ソースを移動する: `original-tools/{pyproject.toml,uv.lock,src/,docs/}` → `discord-session/mcp/server-admin/`。
+1. ソースを移動する: `original-tools/{pyproject.toml,uv.lock,src/,docs/}` → `discord-bot/mcp/server-admin/`。
    `.env` は移動しない（後述のとおり共有の場所から読む）。`.venv` は作り直す
 2. `server.py` のトークン読み込みを直す。優先順は「環境変数 → `${DISCORD_STATE_DIR:-~/.claude/channels/discord}/.env`」
    にして、公式プラグインと同じファイルを共有する。`DISCORD_GUILD_ID` も同じファイルに書けるようにする
@@ -39,15 +39,15 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
 }
 ```
 
-4. ツール名が変わる。`mcp__discord-server-admin__<tool>` → `mcp__plugin_discord-session_server-admin__<tool>`
+4. ツール名が変わる。`mcp__discord-server-admin__<tool>` → `mcp__plugin_discord-bot_server-admin__<tool>`
    （公式の `mcp__plugin_discord_discord__reply` と同じ規則。実際の名前は `/mcp` かツール一覧で確認してから置換する）。
    discord-workspace 側で書き換える場所:
    - `.claude/settings.json` の `permissions.allow`（8 ルール）と PostToolUse フックの matcher
    - `.claude/skills/setup-channel/SKILL.md`、`sync-threads/SKILL.md`、`close-article-thread/SKILL.md` の allowed-tools と本文
    - `CLAUDE.md` の「利用可能なツール」表、`docs/discord-context-control.md`
 5. グローバル登録を外す: `claude mcp remove discord-server-admin -s user`（`~/.claude.json` から消える）
-6. `plugin.json` と `marketplace.json` の version を 0.2.0 に上げてコミット →
-   discord-workspace で `claude plugin update discord-session@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
+6. `plugin.json` と `marketplace.json` の version を上げてコミット →
+   discord-workspace で `claude plugin update discord-bot@ryuki-plugins --scope project` → Discord セッションで `/reload-plugins`
 7. 検証
    - discord-workspace の使い捨てセッションで `list_channels` が動く（tmux 内、`--channels` は付けない）
    - 別ディレクトリのセッションで server-admin の MCP が起動しない（子プロセス一覧で確認）
@@ -57,18 +57,18 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
 
 ## 手順 2. setup-channel とフックの移植
 
-1. `discord-workspace/.claude/skills/setup-channel/` → `discord-session/skills/setup-channel/`
+1. `discord-workspace/.claude/skills/setup-channel/` → `discord-bot/skills/setup-channel/`
    - allowed-tools のツール名を新しい名前に
    - `allowFrom` へのユーザー ID の直書きをやめ、`~/.claude/channels/discord/access.json` の
      トップレベル `allowFrom` をそのまま使う手順に書き換える
    - 「CLAUDE.md のチャンネル構成表を更新」「memory/active-threads.md にセクション追加」は
      「プロジェクトの CLAUDE.md や台帳にチャンネル一覧があれば更新する」という一般化した表現にする
-2. `discord-workspace/.claude/hooks/remind-channel-access.sh` → `discord-session/hooks/remind-channel-access.sh`
+2. `discord-workspace/.claude/hooks/remind-channel-access.sh` → `discord-bot/hooks/remind-channel-access.sh`
    - 注入する文面のユーザー ID を access.json から読むように。JSON を読んで文面を組む処理なので Python
      （`uv run --script`）が向く。`jq` だけで済むなら bash のままでもよい
    - `hooks/hooks.json` に PostToolUse（matcher: 新しい create_channel のツール名）を追加
 3. discord-workspace 側から skill と hook、settings.json の PostToolUse エントリを削除。CLAUDE.md の
-   「新規作成時は必ず /setup-channel の手順に従い」を `/discord-session:setup-channel` に書き換える
+   「新規作成時は必ず /setup-channel の手順に従い」を `/discord-bot:setup-channel` に書き換える
 4. version を上げて update → `/reload-plugins` → Discord から「テスト用チャンネル作って」で通しテスト → テストチャンネル削除
 
 ## 手順 3（構想）. 公式プラグインをフォークして Bot 本体にし、スラッシュコマンドを載せる
@@ -105,8 +105,8 @@ Claude に転送し、Bot 自身の投稿（`author.bot`）は捨てるので、
 
 ### 名前
 
-中身が「クロコ（Discord サーバー管理 Bot）の本体」になるので、`discord-session` は狭い。
-候補は次のとおり（決定はリュウキ）。
+2026-09-03 に決定: リポジトリ `claude-code-discord-bot`、プラグイン名 `discord-bot`（旧 `discord-session` から改名済み）。
+検討した候補は次のとおり。
 
 - リポジトリ `claude-code-discord-bot`、プラグイン名 `discord-bot`（スキルは `/discord-bot:ctx`）: 説明的で、公開向き
 - リポジトリ `kuroko`、プラグイン名 `kuroko`（`/kuroko:ctx`）: 短くて愛着があるが、他人には中身が伝わらない
@@ -124,8 +124,8 @@ discord-workspace の `enabledPlugins` のキーと CLAUDE.md の参照、再イ
 
 ## その後の候補
 
-- GitHub のプライベートリポジトリ https://github.com/ryuki-imachi/claude-code-discord-session を Public に切り替え、
-  marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/claude-code-discord-session`）
+- GitHub のプライベートリポジトリ https://github.com/ryuki-imachi/claude-code-discord-bot を Public に切り替え、
+  marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot`）
 - 公式プラグインの `server.ts` をフォークしてプレゼンス更新を統合する（Gateway 接続を 1 本にできる）
 - Developer Portal で Presence Intent を有効にし、`discord_presence_check.py` で表示を自動確認できるようにする
 
@@ -146,7 +146,7 @@ discord-workspace の `enabledPlugins` のキーと CLAUDE.md の参照、再イ
 ### 商標・名乗り方
 
 - 「Discord」「Claude Code」を製品名として使わず、README の冒頭に「非公式のコミュニティ製プラグインで、Discord 社
-  および Anthropic 社とは無関係」と明記する。`discord-session` のような技術的な名前自体は discord.py などと同じ使い方で問題ない
+  および Anthropic 社とは無関係」と明記する。`discord-bot` のような技術的な名前自体は discord.py などと同じ使い方で問題ない
 - Discord のロゴ・アイコン画像は同梱しない
 
 ### 個人情報・秘密情報
@@ -166,7 +166,7 @@ git log --all -p | grep -E '[0-9]{17,19}|sk-ant|DISCORD_BOT_TOKEN=' || echo clea
 
 ```sh
 git branch main-local
-git checkout --orphan public && git commit -m "discord-session v<version>"
+git checkout --orphan public && git commit -m "discord-bot v<version>"
 git branch -D main && git branch -m main
 ```
 

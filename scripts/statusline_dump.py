@@ -5,7 +5,7 @@
 """
 statusline_dump.py — Claude Code のステータスライン JSON を保存してから、元のステータスラインコマンドへ渡すラッパー
 
-discord-session プラグインの ctx スキルと presence 常駐は ~/.claude/tmp/statusline/<session_id>.json を読む。
+discord-bot プラグインの ctx スキルと presence 常駐は ~/.claude/tmp/statusline/<session_id>.json を読む。
 自分の statusline スクリプトを改造したくない場合は、settings.json の statusLine.command をこのラッパー経由にする。
 
   "statusLine": {
@@ -22,7 +22,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-DUMP_DIR = os.environ.get("DISCORD_SESSION_STATUSLINE_DIR") or os.path.join(os.path.expanduser("~"), ".claude", "tmp", "statusline")
+DUMP_DIR = os.environ.get("DISCORD_BOT_STATUSLINE_DIR") or os.path.join(os.path.expanduser("~"), ".claude", "tmp", "statusline")
 
 
 def find_claude_pid() -> int | None:

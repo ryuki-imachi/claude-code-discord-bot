@@ -6,7 +6,7 @@
 context_usage.py — 今動いている Claude Code セッションのコンテキスト使用量を表示する
 
 Discord から「/ctx」と送られたときに、Claude が Bash で実行して結果を reply する想定。
-（discord-session プラグイン同梱。単体でも動く）
+（discord-bot プラグイン同梱。単体でも動く）
 
 データソース（優先順）
   1. ~/.claude/tmp/statusline/<session_id>.json
@@ -30,7 +30,7 @@ from datetime import datetime, timedelta, timezone
 
 JST = timezone(timedelta(hours=9))
 HOME = os.path.expanduser("~")
-STATUSLINE_DIR = os.environ.get("DISCORD_SESSION_STATUSLINE_DIR") or os.path.join(HOME, ".claude", "tmp", "statusline")
+STATUSLINE_DIR = os.environ.get("DISCORD_BOT_STATUSLINE_DIR") or os.path.join(HOME, ".claude", "tmp", "statusline")
 PROJECTS_DIR = os.path.join(HOME, ".claude", "projects")
 
 

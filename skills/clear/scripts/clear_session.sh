@@ -8,7 +8,7 @@
 #     CLAUDE_PID（Bashツール内で自動設定）→ そのプロセスの TTY → 同じ TTY を持つ tmux ペイン
 #     を特定して tmux send-keys する。/clear はターン実行中でもキューされ、ターンが終わった
 #     直後に実行される（2026-09-02 に検証済み）。
-#   --chat-id を渡すと ~/.claude/discord-session/pending-clear.json にマーカーを書き、/clear 完了後に
+#   --chat-id を渡すと ~/.claude/discord-bot/pending-clear.json にマーカーを書き、/clear 完了後に
 #   SessionStart(clear) フック（hooks/notify-clear-done.sh）が Discord へ完了通知を投げる。
 set -u
 
@@ -24,7 +24,7 @@ while [ $# -gt 0 ]; do
 done
 
 # マーカーと通知ログの置き場（フック notify-clear-done.sh と共有）
-state_dir="${DISCORD_SESSION_STATE_DIR:-$HOME/.claude/discord-session}"
+state_dir="${DISCORD_BOT_STATE_DIR:-$HOME/.claude/discord-bot}"
 
 # 1. 自分を動かしている Claude Code プロセスを特定する
 pid="${CLAUDE_PID:-}"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# start-discord.sh — Discord セッション一式を tmux セッション "discord" で起動する（discord-session プラグイン同梱）
+# start-discord.sh — Discord セッション一式を tmux セッション "discord" で起動する（discord-bot プラグイン同梱）
 #   claude 側   : claude --channels plugin:discord@claude-plugins-official [追加引数]
 #   presence 側 : uv run <plugin>/scripts/discord_presence.py（Bot のステータスにコンテキスト使用量を表示）
 #

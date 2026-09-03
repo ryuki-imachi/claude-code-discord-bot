@@ -1,5 +1,6 @@
-# discord-session
+# discord-bot
 
+リュウキの Discord サーバー管理 Bot「kuroko-chan」の中身です。Claude Code のプラグインとして動きます。
 Discord 社および Anthropic 社とは無関係の、非公式なコミュニティ製プラグインです。
 
 Claude Code の公式 Discord プラグインに足りない機能を補う、自作の Claude Code プラグインです。
@@ -22,7 +23,7 @@ Discord のチャンネル機能は 1 つのセッションを開きっぱなし
 | サーバー管理 MCP | 移植予定 | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（9 ツール）。現在は `original-tools` として別管理 |
 | チャンネル作成ワークフロー | 移植予定 | チャンネルを作ったあと、公式プラグインの `access.json` に受信設定を入れて受信テストまで行うスキルと、忘れ防止フック |
 
-Claude Code から見たスキル名は `/discord-session:ctx` と `/discord-session:clear` です。
+Claude Code から見たスキル名は `/discord-bot:ctx` と `/discord-bot:clear` です。
 Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません（「コンテキストどれくらい？」「クリアして」でも通ります）。
 
 ## 前提
@@ -41,9 +42,9 @@ Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません
 プラグインの MCP サーバーが有効なセッション全部で立ち上がり、同じ Bot トークンで何本も接続してしまうためです。
 
 ```sh
-claude plugin marketplace add ~/Desktop/work/claude-discord-channel/discord-session
+claude plugin marketplace add ~/Desktop/work/claude-discord-channel/discord-bot
 cd <Discord セッションに使うプロジェクト>
-claude plugin install discord-session@ryuki-plugins --scope project
+claude plugin install discord-bot@ryuki-plugins --scope project
 ```
 
 公式 Discord プラグインも同じ理由でプロジェクトスコープに絞ることを勧めます
@@ -63,7 +64,7 @@ claude plugin install discord-session@ryuki-plugins --scope project
 {
   "statusLine": {
     "type": "command",
-    "command": "uv run ~/Desktop/work/claude-discord-channel/discord-session/scripts/statusline_dump.py -- <元のコマンド>"
+    "command": "uv run ~/Desktop/work/claude-discord-channel/discord-bot/scripts/statusline_dump.py -- <元のコマンド>"
   }
 }
 ```
@@ -108,12 +109,12 @@ Bot のステータスは Claude が応答するたびに更新されます（�
 
 ```
 Discord「/clear」
-  → Claude が /discord-session:clear を実行
+  → Claude が /discord-bot:clear を実行
      1. context_usage.py で使用量を取得
      2. reply「クリアするね（今 54%）」
      3. clear_session.sh --chat-id <chat_id>
           CLAUDE_PID → その TTY → 同じ TTY を持つ tmux ペイン を特定
-          ~/.claude/discord-session/pending-clear.json にマーカーを書く
+          ~/.claude/discord-bot/pending-clear.json にマーカーを書く
           tmux send-keys '/clear' Enter（ターン中なのでキューされる）
      4. ツールを呼ばずにターンを終える
   → キューされた /clear が実行され、新しいセッションが始まる
@@ -128,17 +129,17 @@ Discord「/clear」
 - Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
   playing / watching / listening / competing / custom を選べます（既定 playing。custom は吹き出し表示で狭い）
 
-GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-session）から入れる場合は、
-`claude plugin marketplace add ryuki-imachi/claude-code-discord-session` で marketplace を登録します。
+GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-bot）から入れる場合は、
+`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot` で marketplace を登録します。
 
 ## 更新のしかた
 
-インストール時にプラグインは `~/.claude/plugins/cache/ryuki-plugins/discord-session/<version>/` へコピーされます。
+インストール時にプラグインは `~/.claude/plugins/cache/ryuki-plugins/discord-bot/<version>/` へコピーされます。
 このリポジトリを編集してコミットしたら、`plugin.json` と `marketplace.json` の `version` を上げてから反映します。
 
 ```sh
 cd <Discord セッションに使うプロジェクト>
-claude plugin update discord-session@ryuki-plugins --scope project
+claude plugin update discord-bot@ryuki-plugins --scope project
 ```
 
 そのあと、動いている Discord セッションで `/reload-plugins` を打つか、セッションを再起動します。
@@ -157,8 +158,8 @@ claude plugin update discord-session@ryuki-plugins --scope project
 ```
 .claude-plugin/plugin.json          マニフェスト
 .claude-plugin/marketplace.json     このディレクトリをローカル marketplace として登録するための定義
-skills/ctx/                         /discord-session:ctx
-skills/clear/                       /discord-session:clear
+skills/ctx/                         /discord-bot:ctx
+skills/clear/                       /discord-bot:clear
 hooks/hooks.json                    SessionStart(clear) で完了通知
 hooks/notify-clear-done.py           完了通知の本体（Discord REST API へ投稿）
 scripts/discord_presence.py         Bot ステータスに使用量を常時表示する常駐（uv run）
@@ -167,7 +168,7 @@ scripts/start-discord.sh            tmux セッション discord に claude と 
 scripts/statusline_dump.py          ステータスライン JSON を保存するラッパー
 ```
 
-状態ファイルは `~/.claude/discord-session/`（`pending-clear.json`、`clear-notify.log`）に置きます。
+状態ファイルは `~/.claude/discord-bot/`（`pending-clear.json`、`clear-notify.log`）に置きます。
 
 ## ライセンス
 

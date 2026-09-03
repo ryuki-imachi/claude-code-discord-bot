@@ -6,7 +6,7 @@
 notify-clear-done.py — SessionStart(clear) フック
 
 Discord からの /clear 依頼（clear スキル）で始まった新セッションなら、依頼元のチャンネルへ完了通知を投稿する。
-  - clear スキル（clear_session.sh --chat-id）が ~/.claude/discord-session/pending-clear.json にマーカーを置く
+  - clear スキル（clear_session.sh --chat-id）が ~/.claude/discord-bot/pending-clear.json にマーカーを置く
   - ターミナルで手動 /clear した場合はマーカーが無いので何もしない
   - マーカーが 10 分より古い場合は無視する（取り残しによる誤爆防止）
   - マーカーに "dry_run": true があれば投稿せずログだけ残す（動作確認用）
@@ -21,7 +21,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-STATE_DIR = os.environ.get("DISCORD_SESSION_STATE_DIR") or os.path.expanduser("~/.claude/discord-session")
+STATE_DIR = os.environ.get("DISCORD_BOT_STATE_DIR") or os.path.expanduser("~/.claude/discord-bot")
 DISCORD_STATE_DIR = os.environ.get("DISCORD_STATE_DIR") or os.path.expanduser("~/.claude/channels/discord")
 MARKER = os.path.join(STATE_DIR, "pending-clear.json")
 LOG = os.path.join(STATE_DIR, "clear-notify.log")
@@ -56,7 +56,7 @@ def post_message(chat_id: str, token: str) -> str:
         headers={
             "Authorization": f"Bot {token}",
             "Content-Type": "application/json",
-            "User-Agent": "discord-session (Claude Code plugin)",
+            "User-Agent": "discord-bot (Claude Code plugin)",
         },
         method="POST",
     )
