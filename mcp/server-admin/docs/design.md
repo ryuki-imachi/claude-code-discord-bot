@@ -1,5 +1,9 @@
 # 設計書: Discord サーバー管理 MCP サーバー
 
+> この文書はプラグインに取り込む前、単体のプロジェクトとして作っていたときの設計書です。実装の判断の理由を残す目的で
+> そのまま置いてあります。現在の実装と違うところは末尾の「実装との差分」にまとめました。
+
+
 ## 1. 背景と目的
 
 ### 背景
@@ -151,3 +155,16 @@ Discord API にはレート制限がある。httpx で直接呼び出すため�
 5. 動作確認
 
 追加機能（ロール管理・サーバー情報など）は必要になった時点で検討する。
+
+## 実装との差分（2026-09-04 時点）
+
+この設計書を書いたあとに変わったところです。
+
+- ツールは 9 つに増えました。設計書に載っている 5 つ（`list_channels` / `create_channel` / `delete_channel` /
+  `edit_channel` / `create_category`）に加えて、フォーラムとスレッドを扱う `create_forum_thread` / `list_threads` /
+  `close_thread` / `reopen_thread` があります
+- トークンとギルド ID は、プロジェクト直下の `.env` ではなく公式 Discord プラグインと共有する
+  `${DISCORD_STATE_DIR:-~/.claude/channels/discord}/.env` から読みます。`DISCORD_GUILD_ID` が無いときは
+  Bot が参加しているサーバーを問い合わせて自動で決めます
+- レート制限は 429 を受けたときのリトライだけ実装しています。`X-RateLimit-Remaining` を見た先読みの待機は入れていません
+- 「8. 開発ステップ」は完了済みです。プラグイン化の経緯はリポジトリ直下の `docs/migration-plan.md` にあります
