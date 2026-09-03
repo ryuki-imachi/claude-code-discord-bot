@@ -64,7 +64,8 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
    - 「CLAUDE.md のチャンネル構成表を更新」「memory/active-threads.md にセクション追加」は
      「プロジェクトの CLAUDE.md や台帳にチャンネル一覧があれば更新する」という一般化した表現にする
 2. `discord-workspace/.claude/hooks/remind-channel-access.sh` → `discord-session/hooks/remind-channel-access.sh`
-   - 注入する文面のユーザー ID を access.json から読むように（`python3` か `jq` で `allowFrom` を取る）
+   - 注入する文面のユーザー ID を access.json から読むように。フックは notify-clear-done.py と同じく
+     `uv run --script` の Python で書く（bash + python3 の混在にしない）
    - `hooks/hooks.json` に PostToolUse（matcher: 新しい create_channel のツール名）を追加
 3. discord-workspace 側から skill と hook、settings.json の PostToolUse エントリを削除。CLAUDE.md の
    「新規作成時は必ず /setup-channel の手順に従い」を `/discord-session:setup-channel` に書き換える

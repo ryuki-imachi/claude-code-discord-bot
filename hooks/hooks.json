@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/notify-clear-done.sh",
+            "command": "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:$PATH\" \"${CLAUDE_PLUGIN_ROOT}/hooks/notify-clear-done.py\"",
             "statusMessage": "Discord へクリア完了を通知中"
           }
         ]

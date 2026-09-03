@@ -28,7 +28,8 @@ Discord 側で送る文字列は `/ctx` と `/clear` のままで構いません
 ## 前提
 
 - 公式 Discord プラグインが設定済みで、Bot トークンが `~/.claude/channels/discord/.env` にあること
-- tmux と uv が入っていること（常駐スクリプトは `uv run` で動きます。依存は discord.py だけ）
+- tmux と uv が入っていること。Python のスクリプトはすべて `uv run --script` で動きます（shebang に書いてあるので直接実行できます）。
+  常駐スクリプト以外は標準ライブラリだけ、常駐スクリプトは discord.py だけを使います
 - macOS で動作確認しています。`ps` の使い方が BSD 系前提なので、Linux では微調整が要るかもしれません
 
 ## セットアップ
@@ -56,13 +57,13 @@ claude plugin install discord-session@ryuki-plugins --scope project
 
 - 自分の statusline スクリプトに保存処理を足す。`_dumped_at`（ISO 形式の時刻）と `_claude_pid`
   （Claude Code 本体の PID。親プロセスをたどって探す）も一緒に入れます。実装例は `scripts/statusline_dump.py` にあります
-- または `settings.json` の `statusLine.command` をラッパー経由にする
+- または `settings.json` の `statusLine.command` をラッパー経由にする（`uv` が PATH に無い環境では `/opt/homebrew/bin/uv` のようにフルパスで書く）
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "python3 ~/Desktop/work/claude-discord-channel/discord-session/scripts/statusline_dump.py -- <元のコマンド>"
+    "command": "uv run ~/Desktop/work/claude-discord-channel/discord-session/scripts/statusline_dump.py -- <元のコマンド>"
   }
 }
 ```
@@ -116,7 +117,7 @@ Discord「/clear」
           tmux send-keys '/clear' Enter（ターン中なのでキューされる）
      4. ツールを呼ばずにターンを終える
   → キューされた /clear が実行され、新しいセッションが始まる
-  → SessionStart(clear) フック notify-clear-done.sh
+  → SessionStart(clear) フック notify-clear-done.py
        マーカーを読んで Discord REST API で「クリアしたよ」を投稿し、マーカーを消す
 ```
 
@@ -156,7 +157,7 @@ claude plugin update discord-session@ryuki-plugins --scope project
 skills/ctx/                         /discord-session:ctx
 skills/clear/                       /discord-session:clear
 hooks/hooks.json                    SessionStart(clear) で完了通知
-hooks/notify-clear-done.sh
+hooks/notify-clear-done.py           完了通知の本体（Discord REST API へ投稿）
 scripts/discord_presence.py         Bot ステータスに使用量を常時表示する常駐（uv run）
 scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用
 scripts/start-discord.sh            tmux セッション discord に claude と presence を起動するランチャー
