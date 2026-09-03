@@ -1,14 +1,14 @@
 <mxfile host="65bd71144e">
     <diagram name="architecture" id="arch">
-        <mxGraphModel dx="1076" dy="818" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="756" dy="638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
                 <mxCell id="user" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;ユーザー&lt;br&gt;（Discord アプリ）&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="50" width="180" height="80" as="geometry"/>
+                    <mxGeometry x="11" y="50" width="180" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="discord" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;Discord&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;fontSize=16;" parent="1" vertex="1">
-                    <mxGeometry x="40" y="190" width="180" height="210" as="geometry"/>
+                    <mxGeometry x="11" y="190" width="180" height="210" as="geometry"/>
                 </mxCell>
                 <mxCell id="plugin" value="discord-bot プラグイン" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F5FB;strokeColor=#6C8EBF;dashed=1;verticalAlign=top;fontStyle=1;fontSize=17;" parent="1" vertex="1">
                     <mxGeometry x="320" y="130" width="440" height="590" as="geometry"/>
@@ -44,9 +44,9 @@
                         <mxPoint y="-26" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e3" value="REST（チャンネル、スレッド）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;exitX=0;exitY=0.5;entryX=1;entryY=0.81;labelBackgroundColor=none;" parent="1" source="admin" target="discord" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <mxPoint y="14" as="offset"/>
+                <mxCell id="e3" value="REST&lt;div&gt;（チャンネル、スレッド）&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;exitX=0;exitY=0.5;entryX=1;entryY=0.81;labelBackgroundColor=none;" parent="1" source="admin" target="discord" edge="1">
+                    <mxGeometry x="0.0007" y="20" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e4" value="チャンネル通知 →&lt;br&gt;← reply / react / fetch_messages" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;startArrow=block;startFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.0816;labelBackgroundColor=none;" parent="1" source="channel" target="claude" edge="1">
@@ -64,19 +64,19 @@
                         <mxPoint y="-14" as="offset"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="e7" value="&lt;span&gt;セッション開始時・ツール実行後に発火&lt;/span&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;exitX=0;exitY=0.898;entryX=1;entryY=0.5;labelBackgroundColor=none;" parent="1" source="claude" target="hooks" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <mxPoint y="-14" as="offset"/>
+                <mxCell id="e7" value="&lt;span&gt;セッション開始時&lt;/span&gt;&lt;div&gt;&lt;span&gt;ツール実行後に発火&lt;/span&gt;&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;dashed=1;exitX=0;exitY=0.898;entryX=1;entryY=0.5;labelBackgroundColor=none;" parent="1" source="claude" target="hooks" edge="1">
+                    <mxGeometry y="-20" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
                 <mxCell id="e8" value="20 秒ごとに読む" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=14;endArrow=block;endFill=1;strokeWidth=1.5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;" parent="1" source="statusline" target="channel" edge="1">
-                    <mxGeometry relative="1" as="geometry">
+                    <mxGeometry x="0.5839" y="-10" relative="1" as="geometry">
                         <Array as="points">
                             <mxPoint x="1320" y="780"/>
                             <mxPoint x="1320" y="170"/>
                             <mxPoint x="540" y="170"/>
                         </Array>
-                        <mxPoint x="-160" y="-14" as="offset"/>
+                        <mxPoint as="offset"/>
                     </mxGeometry>
                 </mxCell>
             </root>
