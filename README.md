@@ -128,6 +128,9 @@ Discord「/clear」
 - Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
   playing / watching / listening / competing / custom を選べます（既定 playing。custom は吹き出し表示で狭い）
 
+GitHub のリポジトリ（https://github.com/ryuki-imachi/claude-code-discord-session）から入れる場合は、
+`claude plugin marketplace add ryuki-imachi/claude-code-discord-session` で marketplace を登録します。
+
 ## 更新のしかた
 
 インストール時にプラグインは `~/.claude/plugins/cache/ryuki-plugins/discord-session/<version>/` へコピーされます。

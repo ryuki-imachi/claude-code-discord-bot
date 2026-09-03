@@ -81,7 +81,8 @@ create_forum_thread / list_threads / close_thread / reopen_thread。
 
 ## その後の候補
 
-- GitHub に公開し、marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/<repo>`）
+- GitHub のプライベートリポジトリ https://github.com/ryuki-imachi/claude-code-discord-session を Public に切り替え、
+  marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/claude-code-discord-session`）
 - 公式プラグインの `server.ts` をフォークしてプレゼンス更新を統合する（Gateway 接続を 1 本にできる）
 - Developer Portal で Presence Intent を有効にし、`discord_presence_check.py` で表示を自動確認できるようにする
 
