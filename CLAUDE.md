@@ -30,7 +30,8 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
   #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合、#6 スラッシュコマンド /ctx /clear、
   #7 ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、#8 のうち個人環境の記述の一般化と履歴走査（v0.6.1）
-- 残り・次の一歩: #8 の Public 化（開発者の確認待ち。`gh repo edit --visibility public`）。Discord 側の実操作テスト
-  （通常メッセージ、/ctx スラッシュコマンド、/task）も開発者が確認する
+- 残り・次の一歩: フォーク版を channel にするには承認リスト対応が必要（管理者設定 allowedChannelPlugins、要 sudo。README セットアップ 4）。
+  それまで channel は公式プラグイン（ランチャー既定 official）。承認後に `DISCORD_BOT_CHANNEL_MODE=fork` で再起動して
+  受信・スラッシュコマンドを確認する。#8 の Public 化は開発者の確認待ち
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）

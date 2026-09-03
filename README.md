@@ -55,11 +55,28 @@ claude plugin install discord-bot@ryuki-plugins --scope project
 }
 ```
 
-4. プロジェクトのディレクトリで起動します。tmux セッション `discord` の中で
-   `claude --channels plugin:discord-bot@ryuki-plugins` が動きます。初回は DM のペアリングコードを
+4. このプラグインを Discord との送受信（channel）に使うには、Claude Code の承認リストに載せる必要があります。
+   Claude Code は公式以外の channel プラグインからの通知を既定で捨てるためです。管理者設定
+   `/Library/Application Support/ClaudeCode/managed-settings.json`（macOS。要 sudo）に次を書きます。
+
+```json
+{
+  "allowedChannelPlugins": [
+    { "plugin": "discord-bot", "marketplace": "ryuki-plugins" },
+    { "plugin": "discord", "marketplace": "claude-plugins-official" }
+  ]
+}
+```
+
+   書かない場合は、`DISCORD_BOT_CHANNEL_MODE=official` のまま公式プラグインを channel に使い、このプラグインは
+   Bot ステータス表示・サーバー管理 MCP・スキルだけを担当します（スラッシュコマンドは使えません）。
+
+5. プロジェクトのディレクトリで起動します。承認リストに載せたら `DISCORD_BOT_CHANNEL_MODE=fork` を付けてください。
+   tmux セッション `discord` の中で claude が動きます。初回は DM のペアリングコードを
    `/discord-bot:access pair <コード>` で承認してください。
 
 ```sh
+export DISCORD_BOT_CHANNEL_MODE=fork   # 承認リストに載せた場合。省略時は official
 ~/path/to/claude-code-discord-bot/scripts/start-discord.sh                       # 新規
 ~/path/to/claude-code-discord-bot/scripts/start-discord.sh --resume <session-id> # 会話を引き継ぐ
 ```
