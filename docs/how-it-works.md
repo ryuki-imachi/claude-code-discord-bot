@@ -1,6 +1,6 @@
 # 仕組み
 
-### /clear の流れ
+## /clear の流れ
 
 ```
 Discord「/clear」
@@ -20,7 +20,7 @@ Discord「/clear」
 - `/clear` はターン実行中でもキューされ、ターン終了直後に実行されます。プロセスと MCP 接続は残り、セッション ID だけ変わります
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
 
-### Bot ステータス
+## Bot ステータス
 
 `channel/presence.ts` が、channel サーバーを起動した Claude Code 本体の PID を親プロセスをたどって特定し、
 その PID を `_claude_pid` に持つステータスラインのダンプを 20 秒ごとに読んでアクティビティを更新します
@@ -28,7 +28,7 @@ Discord「/clear」
 Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
 playing（既定）/ watching / listening / competing / custom を選べます（custom は吹き出し表示で狭い）。
 
-### スラッシュコマンド
+## スラッシュコマンド
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
 定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
@@ -53,7 +53,7 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
 通常のメッセージとしてチャンネルに投稿します。登録には Bot の招待時に `applications.commands` スコープが必要で、
 無い場合は起動ログに再認可用の URL が出ます。`DISCORD_SLASH_COMMANDS=off` で登録を止められます。
 
-### サーバー管理 MCP
+## サーバー管理 MCP
 
 `mcp/server-admin/` は Python（FastMCP + httpx）の MCP サーバーで、Discord REST API v10 を直接呼びます。
 ツールは list_channels / create_channel / create_category / edit_channel / delete_channel /
