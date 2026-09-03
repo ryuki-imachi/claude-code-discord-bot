@@ -32,7 +32,7 @@ mcp/server-admin/
 （環境変数 `DISCORD_BOT_TOKEN` / `DISCORD_GUILD_ID` が既にあればそちらを優先）。
 このディレクトリに `.env` は置かない。
 
-## 移植元
+## 成り立ち
 
-`~/path/to/claude-code-discord-bot/` と並ぶディレクトリの `original-tools/` にあった同名プロジェクトを、
-discord-bot プラグイン（issue #1）に取り込んだもの。元の `.venv` は作り直し、コミット履歴は引き継いでいない。
+もとは単体の MCP サーバープロジェクトとして作り、あとから discord-bot プラグインに取り込んだ（issue #1）。
+そのときの設計書が `docs/design.md` で、現在の実装との差分は同ファイルの末尾に書いてある。

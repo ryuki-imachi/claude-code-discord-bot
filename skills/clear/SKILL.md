@@ -35,14 +35,14 @@ ${CLAUDE_SKILL_DIR}/scripts/clear_session.sh --chat-id <chat_id>
 
 4. 結果で分岐する
    - `OK:` が出たら、それ以上ツールを呼ばず短く終える。ターン終了と同時に /clear が走り、新セッションの
-     SessionStart フック（このプラグインの `hooks/notify-clear-done.sh`）が Discord へ「クリアしたよ」を投稿する
+     SessionStart フック（このプラグインの `hooks/notify-clear-done.py`）が Discord へ「クリアしたよ」を投稿する
    - `NG:` が出たら、その理由（tmux の外で動いている／リモートセッション等）を Discord に伝える。
      その場合はユーザーがターミナルで /clear するしかない
 
 ## 仕組みと制約
 
 - 特定方法: `CLAUDE_PID` → そのプロセスの TTY → 同じ TTY を持つ tmux ペイン。Discord セッションは tmux の中で
-  `claude --channels plugin:discord@claude-plugins-official` として動かす前提（`scripts/start-discord.sh` が面倒を見る）
+  `claude --channels plugin:discord-bot@ryuki-plugins` として動かす前提（`scripts/start-discord.sh` が面倒を見る）
 - /clear 後もプロセスと MCP 接続（Discord ブリッジ）はそのまま残る。セッション ID だけ新しくなる
 - 完了通知はフック経由なので、プラグインを入れ替えたあとは Discord セッションの再起動が必要
 - ターミナルで手動 /clear した場合は通知されない（マーカー `~/.claude/discord-bot/pending-clear.json` が無いため）
