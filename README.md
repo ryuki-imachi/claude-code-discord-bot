@@ -21,8 +21,8 @@ Claude Code の Discord チャンネル機能（`claude --channels ...`）は、
 | チャンネル作成ワークフロー | `/discord-bot:setup-channel`。作成 → access.json の受信設定 → 受信テストまで。作成直後にフックが受信設定を促す |
 | 起動ランチャー | `scripts/start-discord.sh` が tmux セッション `discord` で `claude --channels plugin:discord-bot@ryuki-plugins` を立てる。二重起動は防ぐ |
 
-Discord 側で送る文字列は `/ctx` と `/clear` で構いません（「コンテキストどれくらい？」「クリアして」でも通ります）。
-本物のスラッシュコマンド（補完付き）は issue #6 で対応予定です。
+`/ctx` と `/clear` は Discord のスラッシュコマンド（補完付き）としても登録されます。文字列で送っても
+（「コンテキストどれくらい？」「クリアして」でも）同じように通ります。
 
 ## 前提
 
@@ -147,6 +147,31 @@ Discord「/clear」
 Bot が送れるアクティビティのフィールドは name / type / state / url だけです。`DISCORD_PRESENCE_MODE` で
 playing（既定）/ watching / listening / competing / custom を選べます（custom は吹き出し表示で狭い）。
 
+### スラッシュコマンド
+
+channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
+定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
+ワークスペース固有のコマンドは追加分のファイルに書きます。同名なら追加分が勝ちます。
+
+```js
+[
+  {
+    "name": "task",
+    "description": "タスク台帳を操作する",
+    "skill": "/task-memo",
+    "options": [
+      { "name": "text", "description": "操作と内容（例: 追加 明日〇〇する）", "required": true }
+    ]
+  }
+]
+```
+
+コマンドを受けると、送信者が allowlist に居ることと送信先が受信設定済みのチャンネル（または DM）であることを確認し、
+3 秒以内に「受け付けたよ」を本人にだけ見える形で返してから、`<skill> <引数...>` の 1 行を Claude に渡します
+（例: `/discord-bot:ctx`、`/task-memo 追加 明日〇〇する`）。Claude はそれをスキル呼び出しとして実行し、結果を
+通常のメッセージとしてチャンネルに投稿します。登録には Bot の招待時に `applications.commands` スコープが必要で、
+無い場合は起動ログに再認可用の URL が出ます。`DISCORD_SLASH_COMMANDS=off` で登録を止められます。
+
 ### サーバー管理 MCP
 
 `mcp/server-admin/` は Python（FastMCP + httpx）の MCP サーバーで、Discord REST API v10 を直接呼びます。
@@ -189,6 +214,7 @@ channel サーバーの元になった公式プラグインは `discord@claude-p
 channel/                            Discord channel サーバー（公式プラグインのフォーク、Apache-2.0）
   server.ts                         送受信・アクセス制御・権限中継（上流 0.0.4 + 改変）
   presence.ts                       Bot ステータスへの使用量表示
+  commands.ts / commands.json       スラッシュコマンドの登録と、スキル呼び出しへの変換
   ACCESS.md / UPSTREAM-README.md    上流のドキュメント
 mcp/server-admin/                   サーバー管理 MCP（Python、uv）
 skills/access/ skills/configure/    アクセス管理とトークン設定（上流のスキルを名前空間だけ変えたもの）

@@ -26,7 +26,8 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 - 最終更新: 2026-09-03
 - 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
-  #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合（v0.5.0）
-- 残り・次の一歩: #6 スラッシュコマンド /ctx /clear → #7 ワークスペース用スキルのコマンド化 → #8 公開準備
+  #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合（v0.5.0）、
+  #6 スラッシュコマンド /ctx /clear（commands.ts、追加定義は ~/.claude/discord-bot/commands.json。v0.6.0）
+- 残り・次の一歩: #7 ワークスペース用スキルのコマンド化（追加定義ファイルを書いて動作確認）→ #8 公開準備
 - リモート: https://github.com/ryuki-imachi/claude-code-discord-bot（プライベート。公開時は Public に切り替える）
 - 関連リソース: discord-workspace の `memory/tasks.md`（台帳の入口）と `docs/discord-context-control.md`（設計メモ）

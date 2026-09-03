@@ -1,0 +1,12 @@
+[
+  {
+    "name": "ctx",
+    "description": "Claude のコンテキスト使用量（ctx / 5h / 7d）を表示する",
+    "skill": "/discord-bot:ctx"
+  },
+  {
+    "name": "clear",
+    "description": "Claude のコンテキストをクリアして新しいセッションにする",
+    "skill": "/discord-bot:clear"
+  }
+]
