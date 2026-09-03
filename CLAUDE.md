@@ -33,7 +33,7 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 - 完了済み: #1 サーバー管理 MCP の取り込み、#2 discord-workspace の切り替え、#3 setup-channel とフックの移植、#4 ギルド ID 自動判定、
   #9 ダンプ掃除、#5 公式 Discord プラグインのフォーク（channel/、Apache-2.0）とプレゼンス統合、#6 スラッシュコマンド /ctx /clear、
   #7 ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、#8 のうち個人環境の記述の一般化と履歴走査（v0.6.1）
-- 残り・次の一歩: 開発フラグの確認ダイアログが出ない件を anthropics/claude-code に issue 報告するかの判断と、#8 の Public 化の判断（どちらも開発者）。
+- 残り・次の一歩: #8 の Public 化の判断（開発者）。開発フラグの不具合は anthropics/claude-code#82939 で既報のため報告しない（2026-09-03 判断）。
   Discord 側の動作確認は 2026-09-03 19:50 に完了（通常メッセージ、/ctx と /task のスラッシュコマンドで結果が投稿されることを確認）
 - 現在の稼働（2026-09-03 19:46）: 管理者設定 allowedChannelPlugins で承認したうえで、`DISCORD_BOT_CHANNEL_MODE=fork discord-start` で起動。
   フォーク版 channel サーバーが「Channel notifications registered」になり、公式プラグインは使っていない
