@@ -142,9 +142,10 @@ discord-workspace の `enabledPlugins` のキーと CLAUDE.md の参照、再イ
 
 ## その後の候補
 
-- GitHub のプライベートリポジトリ https://github.com/ryuki-imachi/claude-code-discord-bot を Public に切り替え、
-  marketplace をリポジトリ経由にする（`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot`）
-- 公式プラグインの `server.ts` をフォークしてプレゼンス更新を統合する（Gateway 接続を 1 本にできる）
+- 済（2026-09-03）: リポジトリを Public に切り替えた。公式プラグインの `server.ts` もフォークして
+  プレゼンス更新を統合し、Gateway 接続を 1 本にまとめた
+- ローカルの marketplace 登録をディレクトリ参照から GitHub 経由に切り替える
+  （`claude plugin marketplace add ryuki-imachi/claude-code-discord-bot`）
 - Developer Portal で Presence Intent を有効にし、`discord_presence_check.py` で表示を自動確認できるようにする
 
 ## 公開前チェックリスト（権利・個人情報）
