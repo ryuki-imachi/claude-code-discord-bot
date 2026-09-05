@@ -67,18 +67,21 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
 
 ### /model と /effort の流れ
 
+![/model と /effort の流れ](diagrams/switch-flow.png)
+
 `/clear` と同じ「claude の PID → その TTY → 同じ TTY を持つ tmux ペイン」でペインを特定し、そこへ
 `/model <alias>` や `/effort <level>` を打ち込みます。違うのは、送るのが Claude ではなく channel サーバーだという点です。
+図の 2〜5 が channel サーバーの内部処理、6〜7 が Claude 側の反映、8 が切り替わり検知です。
 
-1. 引数を検証します。model は `best` `fable` `opus` `sonnet` `haiku` `sonnet[1m]` `opus[1m]` `opusplan` か
-   `claude-` で始まる完全なモデル ID、effort は `low` `medium` `high` `xhigh` `max` `auto` です。
-   無効な値は何も送らず、依頼した本人にだけ見える形で理由と有効な一覧を返します
-2. ペインを特定できなければ、同じく本人にだけ見える形で NG を返します（tmux の外では送れません）
-3. ステータスラインのダンプから現在値を控えてから送信し、「/model sonnet を送ったよ（今は Fable 5.1 / effort high）。
-   次のメッセージから切り替わるよ」と返します。スラッシュコマンドはターン実行中でもキューされ、ターン終了直後に実行されます
-4. 送信後は 2 秒おきに最大 90 秒ダンプを読み直し、送信時刻より新しい更新で `model.id` / `model.display_name` /
-   `effort.level` が変わったら「モデルを Sonnet 5 に切り替えたよ（effort high）」を依頼元のチャンネルへ投稿します。
-   検知できないままタイムアウトしたときは何も投稿せず、標準エラーにログを残すだけです（検知できなくても切り替わりは効いています）
+- 引数を検証します（図の 2）。model は `best` `fable` `opus` `sonnet` `haiku` `sonnet[1m]` `opus[1m]` `opusplan` か
+  `claude-` で始まる完全なモデル ID、effort は `low` `medium` `high` `xhigh` `max` `auto` です。
+  無効な値は何も送らず、依頼した本人にだけ見える形で理由と有効な一覧を返します
+- ペインを特定できなければ（図の 3）、同じく本人にだけ見える形で NG を返します（tmux の外では送れません）
+- ステータスラインのダンプから現在値を控えてから送信し（図の 3〜4）、「/model sonnet を送ったよ（今は Fable 5.1 / effort high）。
+  次のメッセージから切り替わるよ」と返します（図の 5）。スラッシュコマンドはターン実行中でもキューされ、ターン終了直後に実行されます（図の 6）
+- 送信後は 2 秒おきに最大 90 秒ダンプを読み直し（図の 8）、送信時刻より新しい更新で `model.id` / `model.display_name` /
+  `effort.level` が変わったら「モデルを Sonnet 5 に切り替えたよ（effort high）」を依頼元のチャンネルへ投稿します。
+  検知できないままタイムアウトしたときは何も投稿せず、標準エラーにログを残すだけです（検知できなくても切り替わりは効いています）
 
 - `/model <alias>` の引数指定は「切り替えてデフォルトとして保存」する挙動（ピッカーの Enter 相当）です。
   セッション限定にする指定方法が無いため、ターミナルで新しく開くセッションのデフォルトモデルも変わります
@@ -86,23 +89,26 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
 
 ### /restart の流れ
 
+![/restart の流れ](diagrams/restart-flow.png)
+
 Claude Code のバージョンを上げるには、常駐セッションを新しいバイナリで立ち上げ直す必要があります。ただし claude が終了すると
 その子プロセスである channel サーバーも一緒に死ぬので、終了待ちから起動し直しまでは外に出した補助スクリプトが担当します。
+図のレーンは、再起動前のセッション（1〜5）、claude の外で動く補助スクリプト（6〜8）、再起動後の新しいセッション（9〜10）です。
 
-1. channel サーバーはペインを特定し、ステータスラインのダンプから `session_id` と `cwd` を取ります
-   （ダンプが無ければ `lsof -a -p <pid> -d cwd -Fn` で cwd を取ります）
-2. 補助スクリプト `scripts/restart-helper.sh` を、`Bun.spawn` の `detached`（POSIX では `setsid` 相当）と `unref()` で
-   親から切り離して起動します。引数は環境変数で渡し、標準出力・標準エラーは `~/.claude/discord-bot/restart.log` へ追記します
-3. 「再起動するね」を返してから 1 秒待って、ペインへ `/exit` を送ります。先に `/exit` を送ると、
-   返事が Discord に届く前に claude ごと channel サーバーが落ちてしまうためです
-4. 補助スクリプトは 1 秒おきに `kill -0` で claude の終了を待ちます。90 秒たっても終わらなければ `C-c` と `/exit` を送り直し、
-   180 秒で諦めて「claude が終了しないので再起動を中止したよ」を Discord REST で投稿して終わります
-5. claude が終わったら `claude update` を実行します（180 秒で打ち切り。終了コードの意味が公開されていないので、
-   失敗しても起動し直しへ進みます）。前後の `claude --version` を控えます
-6. `~/.claude/discord-bot/restart-done.json` に依頼元のチャンネル・前後のバージョン・引き継ぎの有無・依頼時刻を書き、
-   元の cwd で `scripts/start-discord.sh` を実行します。tmux セッションを作るか新しいウィンドウにするかはランチャーが判断します
-7. 起動し直した channel サーバーが ready 時に `notifyRestartDone()` でマーカーを読んで消し、
-   「再起動したよ（2.1.261 → 2.1.262）。ここからは新しいセッションで応対するね」を依頼元へ投稿します
+- channel サーバーはペインを特定し、ステータスラインのダンプから `session_id` と `cwd` を取ります（図の 2）
+  （ダンプが無ければ `lsof -a -p <pid> -d cwd -Fn` で cwd を取ります）
+- 補助スクリプト `scripts/restart-helper.sh` を、`Bun.spawn` の `detached`（POSIX では `setsid` 相当）と `unref()` で
+  親から切り離して起動します（図の 3）。引数は環境変数で渡し、標準出力・標準エラーは `~/.claude/discord-bot/restart.log` へ追記します
+- 「再起動するね」を返してから 1 秒待って、ペインへ `/exit` を送ります（図の 4）。先に `/exit` を送ると、
+  返事が Discord に届く前に claude ごと channel サーバーが落ちてしまうためです（claude と channel サーバーの終了が図の 5）
+- 補助スクリプトは 1 秒おきに `kill -0` で claude の終了を待ちます（図の 6）。90 秒たっても終わらなければ `C-c` と `/exit` を送り直し、
+  180 秒で諦めて「claude が終了しないので再起動を中止したよ」を Discord REST で投稿して終わります
+- claude が終わったら `claude update` を実行します（図の 7。180 秒で打ち切り。終了コードの意味が公開されていないので、
+  失敗しても起動し直しへ進みます）。前後の `claude --version` を控えます
+- `~/.claude/discord-bot/restart-done.json` に依頼元のチャンネル・前後のバージョン・引き継ぎの有無・依頼時刻を書き、
+  元の cwd で `scripts/start-discord.sh` を実行します（図の 8）。tmux セッションを作るか新しいウィンドウにするかはランチャーが判断します（図の 9）
+- 起動し直した channel サーバーが ready 時に `notifyRestartDone()` でマーカーを読んで消し（図の 10）、
+  「再起動したよ（2.1.261 → 2.1.262）。ここからは新しいセッションで応対するね」を依頼元へ投稿します
 
 - 既定では会話を引き継ぎません。`/restart resume:yes` のときだけ `--resume <session_id>` を付けて起動し直します
 - ターミナルで `/exit` したときは補助スクリプトが動いていないので、そのまま終了してウィンドウが閉じます（今までどおり）
