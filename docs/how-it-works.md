@@ -8,6 +8,28 @@
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
 - 送り先の特定は `CLAUDE_PID` → その TTY → 同じ TTY を持つ tmux ペイン、の順です。tmux の外では NG を返します
 
+## /model と /effort の流れ
+
+`/clear` と同じ「ペイン特定 → tmux send-keys」の仕組みを使い回します。ペイン特定と送信そのものは
+`scripts/tmux_send_slash.sh` に共通化してあり、`clear_session.sh` もこれを呼び出しています。
+
+- `scripts/switch_setting.py --kind model|effort --value <v> --chat-id <id>` が、引数（model のエイリアス /
+  完全なモデルID、effort の `low` `medium` `high` `xhigh` `max` `auto`）を検証したうえで
+  `tmux_send_slash.sh` 経由で `/model <v>` や `/effort <v>` を送ります。無効な値は何も送らず `NG:` で終わります
+- 送信直後の応答では「切り替わった」とは言い切れません（スラッシュコマンドはターン終了直後に実行されるため）。
+  そこで送信に成功すると、`switch_setting.py` は自分自身を `--watch` サブコマンドで再実行する監視プロセスを
+  `subprocess.Popen(start_new_session=True)` で切り離して起動します。Bash ツールがコマンド終了後に子プロセスを
+  片付けることがあるため、確実に生き残るようにこの形にしています
+- 監視プロセスは最大 90 秒、2 秒おきにステータスラインのダンプ（`model.id` / `model.display_name` /
+  `effort.level`）を読み直し、送信前の値から変わった（または指定した値と一致した）ことを検知したら、
+  `hooks/notify-clear-done.py` と同じ方法（Discord REST の `POST /channels/{chat_id}/messages`）で
+  「モデルを Sonnet 5 に切り替えたよ（effort high）」のように投稿して終了します。タイムアウトしたら
+  何も投稿せず `~/.claude/discord-bot/switch-notify.log` に記録するだけです（検知できなくても、次の
+  メッセージからは新しい設定で応対します）
+- `/model <alias>` の引数指定は「切り替えてデフォルトとして保存」する挙動（ピッカーの Enter 相当）です。
+  セッション限定にする指定方法は無いため、ターミナルで新しく開く他のセッションのデフォルトモデルも変わります。
+  `effort` の `low`〜`xhigh` はモデルごとに保存されますが、`max` はセッション限り、`auto` は保存済み設定をクリアします
+
 ## Bot ステータス
 
 ![Bot ステータスのデータの流れ](diagrams/presence.png)
@@ -24,7 +46,7 @@ playing（既定）/ watching / listening / competing / custom を選べます�
 ![スラッシュコマンドの流れ](diagrams/slash-command.png)
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
-定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
+定義は `channel/commands.json`（同梱: `/ctx`、`/clear`、`/model`、`/effort`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
 ワークスペース固有のコマンドは追加分のファイルに書きます。同名なら追加分が勝ちます。
 
 ```js
@@ -57,7 +79,7 @@ Claude から見たツール名は `mcp__plugin_discord-bot_server-admin__<tool>
 
 ## 制約と注意
 
-- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` を送れず、Claude がその旨を Discord に伝えます
+- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` `/model` `/effort` を送れず、Claude がその旨を Discord に伝えます
 - `--channels` 付きの claude を 2 つ立てると Discord に二重返信します。ランチャーは検出して止めますが、手で起動するときは注意してください
 - Bot のステータスをプログラムから読み取るには Developer Portal で Presence Intent を有効にする必要があります（設定するだけなら不要）。`scripts/discord_presence_check.py` は確認用です
 - `/compact` は対象外です。同じ仕組みで送れますが、要約中に Discord 側が無音になるので用意していません
