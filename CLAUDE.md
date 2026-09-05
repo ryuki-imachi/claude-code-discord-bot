@@ -31,12 +31,17 @@ Claude Code の公式 Discord プラグインに無い機能を補う自作プ�
 
 ## 現在の状況
 
-- 最終更新: 2026-09-04
+- 最終更新: 2026-09-05
 - 完了済み: issue #1〜#9 をすべてクローズ。サーバー管理 MCP の取り込み、discord-workspace の切り替え、
   setup-channel とフックの移植、ギルド ID 自動判定、ダンプ掃除、公式 Discord プラグインのフォーク（channel/、Apache-2.0）と
   プレゼンス統合、スラッシュコマンド /ctx /clear、ワークスペース用コマンド（追加定義 ~/.claude/discord-bot/commands.json）、公開準備
 - issue の外で実施: docs/diagrams/ に構成図と処理フロー図を追加（drawio と PNG）、README の文章と表を整理（v0.6.7）
-- 残り・次の一歩: 無し。開発フラグの不具合は anthropics/claude-code#82939 で既報のため報告しない（2026-09-03 判断）
+- 進行中: issue #47（/model /effort）を PR #50、issue #46（/restart）を PR #51 で実装（v0.7.0 / v0.7.1）。
+  どちらも channel サーバー側で処理する方式（session-control.ts が tmux ペインへ send-keys、/restart は
+  scripts/restart-helper.sh を切り離して起動）。スキル方式（PR #49）とスーパーバイザー方式（PR #48）は取り下げた。
+  実機での動作確認は未実施。channel/ を変えているので反映にはセッションの再起動が要る
+- 残り・次の一歩: PR #50 → #51 の順でマージし、実機確認（/model、/effort、/restart、/restart resume:yes、ターミナルの /exit）。
+  開発フラグの不具合は anthropics/claude-code#82939 で既報のため報告しない（2026-09-03 判断）
 - 現在の稼働: 管理者設定 allowedChannelPlugins で承認したうえで `DISCORD_BOT_CHANNEL_MODE=fork discord-start` で起動する。
   フォーク版 channel サーバーが「Channel notifications registered」になり、公式プラグインは使っていない。
   Discord 側の動作確認は 2026-09-03 19:50 に完了（通常メッセージ、/ctx と /task のスラッシュコマンドで結果が投稿されることを確認）

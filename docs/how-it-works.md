@@ -50,7 +50,7 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
 
 定義に `skill` ではなく `action` を書いたコマンドは、Claude に渡さず channel サーバー自身が処理します
 （`channel/session-control.ts`）。Claude のターンを使わないので、Claude が長い作業の途中でも即座に効きます。
-`action` は同梱の `model` と `effort` だけで、追加分の `commands.json` からも同名で上書きできます。
+`action` は同梱の `model`・`effort`・`restart` だけで、追加分の `commands.json` からも同名で上書きできます。
 
 ```js
 [
@@ -84,6 +84,30 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
   セッション限定にする指定方法が無いため、ターミナルで新しく開くセッションのデフォルトモデルも変わります
 - `effort` の `low`〜`xhigh` はモデルごとに保存され、`max` はセッション限り、`auto` は保存済みの設定をクリアします
 
+### /restart の流れ
+
+Claude Code のバージョンを上げるには、常駐セッションを新しいバイナリで立ち上げ直す必要があります。ただし claude が終了すると
+その子プロセスである channel サーバーも一緒に死ぬので、終了待ちから起動し直しまでは外に出した補助スクリプトが担当します。
+
+1. channel サーバーはペインを特定し、ステータスラインのダンプから `session_id` と `cwd` を取ります
+   （ダンプが無ければ `lsof -a -p <pid> -d cwd -Fn` で cwd を取ります）
+2. 補助スクリプト `scripts/restart-helper.sh` を、`Bun.spawn` の `detached`（POSIX では `setsid` 相当）と `unref()` で
+   親から切り離して起動します。引数は環境変数で渡し、標準出力・標準エラーは `~/.claude/discord-bot/restart.log` へ追記します
+3. 「再起動するね」を返してから 1 秒待って、ペインへ `/exit` を送ります。先に `/exit` を送ると、
+   返事が Discord に届く前に claude ごと channel サーバーが落ちてしまうためです
+4. 補助スクリプトは 1 秒おきに `kill -0` で claude の終了を待ちます。90 秒たっても終わらなければ `C-c` と `/exit` を送り直し、
+   180 秒で諦めて「claude が終了しないので再起動を中止したよ」を Discord REST で投稿して終わります
+5. claude が終わったら `claude update` を実行します（180 秒で打ち切り。終了コードの意味が公開されていないので、
+   失敗しても起動し直しへ進みます）。前後の `claude --version` を控えます
+6. `~/.claude/discord-bot/restart-done.json` に依頼元のチャンネル・前後のバージョン・引き継ぎの有無・依頼時刻を書き、
+   元の cwd で `scripts/start-discord.sh` を実行します。tmux セッションを作るか新しいウィンドウにするかはランチャーが判断します
+7. 起動し直した channel サーバーが ready 時に `notifyRestartDone()` でマーカーを読んで消し、
+   「再起動したよ（2.1.261 → 2.1.262）。ここからは新しいセッションで応対するね」を依頼元へ投稿します
+
+- 既定では会話を引き継ぎません。`/restart resume:yes` のときだけ `--resume <session_id>` を付けて起動し直します
+- ターミナルで `/exit` したときは補助スクリプトが動いていないので、そのまま終了してウィンドウが閉じます（今までどおり）
+- 取り残し対策として、完了通知は 10 分より古いマーカーを無視します（消すだけで投稿しません）
+
 ## サーバー管理 MCP
 
 `mcp/server-admin/` は Python（FastMCP + httpx）の MCP サーバーで、Discord REST API v10 を直接呼びます。
@@ -95,7 +119,7 @@ Claude から見たツール名は `mcp__plugin_discord-bot_server-admin__<tool>
 
 ## 制約と注意
 
-- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` `/model` `/effort` を送れず、その旨を Discord に返します
+- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` `/model` `/effort` `/restart` を送れず、その旨を Discord に返します
 - `--channels` 付きの claude を 2 つ立てると Discord に二重返信します。ランチャーは検出して止めますが、手で起動するときは注意してください
 - Bot のステータスをプログラムから読み取るには Developer Portal で Presence Intent を有効にする必要があります（設定するだけなら不要）。`scripts/discord_presence_check.py` は確認用です
 - `/compact` は対象外です。同じ仕組みで送れますが、要約中に Discord 側が無音になるので用意していません

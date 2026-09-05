@@ -23,11 +23,12 @@ Bot ステータス表示を載せたものです。作った経緯と考え方�
 | アクセス管理 | `/discord-bot:access` でペアリング承認・allowlist・チャンネルの受信設定<br>`/discord-bot:configure` で Bot トークンの保存<br>設定ファイルは公式と同じ `~/.claude/channels/discord/` |
 | コンテキスト使用量の表示 | Discord で `/ctx`<br>ctx / 5h / 7d の使用率をコードブロックで返す |
 | Discord からのクリア | Discord で `/clear`<br>宣言 → tmux ペインに `/clear` を送信 → 新セッション開始時に「クリアしたよ」を自動投稿 |
+| Discord からの再起動 | Discord で `/restart`（`resume: yes` で会話を引き継ぐ）<br>`/exit` を送信 → `claude update` → 起動し直し → 「再起動したよ（2.1.261 → 2.1.262）」を自動投稿 |
 | Discord からのモデル・effort 切り替え | Discord で `/model alias:sonnet` `/effort level:low`<br>tmux ペインに送信 → 切り替わりを検知したら「切り替えたよ」を自動投稿 |
 | Bot ステータスに使用量を常時表示 | Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新<br>ctx 80% 以上で赤 / セッション無しで黄。モデル名の横に effort も表示 |
 | サーバー管理 MCP | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（`server-admin` 9 ツール） |
 | チャンネル作成ワークフロー | `/discord-bot:setup-channel`<br>作成 → access.json の受信設定 → 受信テスト<br>作成直後にフックが受信設定を促す |
-| スラッシュコマンド | `/ctx` `/clear` `/model` `/effort` を同梱<br>`~/.claude/discord-bot/commands.json` に書けば任意のスキルを引数付きで呼べる |
+| スラッシュコマンド | `/ctx` `/clear` `/model` `/effort` `/restart` を同梱<br>`~/.claude/discord-bot/commands.json` に書けば任意のスキルを引数付きで呼べる |
 | 起動ランチャー | `scripts/start-discord.sh` が tmux セッション `discord` で claude を起動<br>二重起動は防ぐ |
 
 ## セットアップ
@@ -121,6 +122,11 @@ ctx ■■■■■□□□□□ 54%  544.8K / 1000.0K tokens
 `/model` の引数指定はデフォルトとしても保存されるので、ターミナルで新しく開くセッションのモデルも変わります。
 `/effort` の `low`〜`xhigh` はモデルごとに保存され、`max` はこのセッション限り、`auto` は保存済みの設定をクリアします。
 
+`/restart` と送ると「再起動するね」と返事があり、数秒後にセッションが終了して新しい tmux ウィンドウで起動し直します。
+`claude update` を挟むので、Claude Code のバージョンを上げるときに使えます。起動が終わると「再起動したよ（2.1.261 → 2.1.262）」が届きます。
+会話は引き継がないので、`/clear` と同じく要点は先に書き出しておいてください。引き継ぎたいときは `/restart resume:yes` と送ります。
+ターミナルで `/exit` したときは今までどおり終了するだけです。
+
 Bot のステータスは、Claude が応答してステータスラインが再描画されるたびに更新されます。channel サーバーがその値を
 最大 20 秒ごとに拾うので、何もしていない間は変わりません。カードの 2 行目にある「更新 HH:MM」が、最後に再描画された時刻です。
 
@@ -130,7 +136,7 @@ Bot のステータスは、Claude が応答してステータスラインが再
 ## ドキュメント
 
 - [docs/background.md](docs/background.md) 背景と考え方、関連記事
-- [docs/how-it-works.md](docs/how-it-works.md) /clear の流れ、Bot ステータス、スラッシュコマンド（/model・/effort を含む）、サーバー管理 MCP、制約
+- [docs/how-it-works.md](docs/how-it-works.md) /clear の流れ、Bot ステータス、スラッシュコマンド（/model・/effort・/restart を含む）、サーバー管理 MCP、制約
 - [docs/development.md](docs/development.md) 更新のしかた、ディレクトリ構成、移植の経緯
 
 ## ライセンス

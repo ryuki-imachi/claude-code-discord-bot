@@ -1,5 +1,5 @@
 /**
- * session-control.ts — Discord から届いた /model と /effort を、この channel サーバーを起動した
+ * session-control.ts — Discord から届いた /model・/effort・/restart を、この channel サーバーを起動した
  * Claude Code が動いている tmux ペインへスラッシュコマンドとして送り込む。
  *
  * Claude のターンを使わずに channel サーバー（別プロセス）が直接 tmux を操作する。
@@ -9,16 +9,34 @@
  * そのため送信した時点では切り替わっていないので、ステータスラインのダンプを最大 90 秒監視し、
  * 値が変わったのを見つけたら依頼元のチャンネルへ「切り替えたよ」を投稿する。
  *
+ * /restart は claude 自身を落として起動し直すので、tmux ペインへ /exit を送る前に補助スクリプト
+ * scripts/restart-helper.sh を切り離して起動する（claude が死ぬとこのサーバーも死ぬため、
+ * 終了待ち・claude update・起動し直しは外のプロセスに任せる）。完了通知は起動し直したあとの
+ * channel サーバーが ready 時に notifyRestartDone() で投稿する。
+ *
  * 環境変数
  *   DISCORD_BOT_STATUSLINE_DIR  ダンプの場所（presence.ts と共通）
+ *   DISCORD_BOT_STATE_DIR       状態ファイルの置き場（既定 ~/.claude/discord-bot）
+ *   DISCORD_BOT_CHANNEL_MODE    起動し直すときの channel モード（既定 fork）
  */
 import type { Client } from 'discord.js'
+import { existsSync, mkdirSync, openSync, readFileSync, unlinkSync } from 'fs'
+import { homedir } from 'os'
+import { join } from 'path'
 import { findClaudePid, pickSession, type Dump } from './presence'
 
 /** /model の引数に使えるエイリアス。これ以外は claude- で始まる完全なモデル ID だけ受ける */
 export const MODEL_ALIASES = ['best', 'fable', 'opus', 'sonnet', 'haiku', 'sonnet[1m]', 'opus[1m]', 'opusplan']
 /** /effort の引数に使えるレベル */
 export const EFFORT_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max', 'auto']
+
+const STATE_DIR = process.env.DISCORD_BOT_STATE_DIR ?? join(homedir(), '.claude', 'discord-bot')
+const RESTART_DONE_FILE = join(STATE_DIR, 'restart-done.json')
+const RESTART_LOG_FILE = join(STATE_DIR, 'restart.log')
+/** 再起動の完了通知は 10 分より古いマーカーを無視する（取り残しによる誤爆を防ぐ） */
+const RESTART_DONE_MAX_AGE_MS = 10 * 60 * 1000
+/** 受付メッセージが Discord に届いてから /exit を送るための待ち時間 */
+const EXIT_DELAY_MS = 1_000
 
 const WATCH_TIMEOUT_MS = 90_000
 const WATCH_INTERVAL_MS = 2_000
@@ -166,4 +184,110 @@ export async function switchSetting(kind: SettingKind, value: string, chatId: st
   else if (v === 'max') tail = 'max はこのセッション限りだよ。'
   else if (v === 'auto') tail = 'auto は保存した設定をクリアするよ。'
   return { ok: true, message: head + tail }
+}
+
+/** claude の cwd。ダンプに無ければ lsof で取る（ダンプが一度も書かれていない起動直後のため） */
+function findClaudeCwd(pid: number, dump: Dump | null): string | null {
+  if (dump?.cwd) return dump.cwd
+  const out = run(['lsof', '-a', '-p', String(pid), '-d', 'cwd', '-Fn']).out
+  for (const line of out.split('\n')) {
+    if (line.startsWith('n/')) return line.slice(1)
+  }
+  return null
+}
+
+/** 補助スクリプトを親から切り離して起動する。detached は POSIX では setsid 相当 */
+function spawnRestartHelper(env: Record<string, string>): string | null {
+  const script = join(import.meta.dir, '..', 'scripts', 'restart-helper.sh')
+  if (!existsSync(script)) return `補助スクリプトが見つからないよ（${script}）。`
+  try {
+    mkdirSync(STATE_DIR, { recursive: true })
+    // 追記モードで開いた fd を渡す。claude が死んだあともログが残る
+    const fd = openSync(RESTART_LOG_FILE, 'a')
+    const proc = Bun.spawn(['bash', script], {
+      cwd: STATE_DIR,
+      env: { ...process.env, ...env },
+      stdin: 'ignore',
+      stdout: fd,
+      stderr: fd,
+      detached: true,
+    })
+    proc.unref()
+    log(`restart helper started: pid=${proc.pid} log=${RESTART_LOG_FILE}`)
+    return null
+  } catch (e) {
+    log(`failed to start restart helper: ${e}`)
+    return `再起動の補助スクリプトを起動できなかったよ（${e}）。`
+  }
+}
+
+/** /restart の本体。ペインを特定して補助スクリプトを切り離し、少し待ってから /exit を送る */
+export function restartSession(resume: boolean, chatId: string, client: Client): ControlResult {
+  void client // 完了通知は起動し直したあとのサーバーが投稿するので、ここでは使わない
+  const pid = findClaudePid()
+  if (!pid) return { ok: false, message: 'claude 本体のプロセスを特定できなかったよ。ターミナルで確認してね。' }
+  const pane = findClaudePane(pid)
+  if ('error' in pane) return { ok: false, message: pane.error }
+
+  const dump = pickSession(pid)
+  const cwd = findClaudeCwd(pid, dump)
+  if (!cwd) return { ok: false, message: 'claude の作業ディレクトリが分からなかったよ。ターミナルから起動し直してね。' }
+  const sessionId = resume ? dump?.session_id ?? '' : ''
+  if (resume && !sessionId) {
+    return { ok: false, message: 'セッション ID が分からないので会話を引き継げないよ。resume 無しの /restart なら再起動できる。' }
+  }
+
+  const failed = spawnRestartHelper({
+    RESTART_CLAUDE_PID: String(pid),
+    RESTART_PANE: pane.paneId,
+    RESTART_CWD: cwd,
+    RESTART_CHAT_ID: chatId,
+    RESTART_RESUME_SESSION: sessionId,
+    // channel サーバーからは起動時のモードが分からないので、環境変数が無ければ既定の fork とみなす
+    RESTART_MODE: process.env.DISCORD_BOT_CHANNEL_MODE ?? 'fork',
+    DISCORD_BOT_STATE_DIR: STATE_DIR,
+    // DISCORD_BOT_TOKEN（失敗通知用）と DISCORD_TMUX_SESSION は process.env から引き継ぐ
+    // （server.ts が起動時に ~/.claude/channels/discord/.env を process.env へ読み込んでいる）
+  })
+  if (failed) return { ok: false, message: failed }
+
+  // 先に受付メッセージを返させる。/exit を先に送ると、返事が届く前に claude ごとこのサーバーが落ちる
+  setTimeout(() => {
+    void sendSlashCommand(pane.paneId, '/exit').then(() => log(`sent /exit to ${pane.paneId} (${pane.paneName}, pid ${pid})`))
+  }, EXIT_DELAY_MS)
+
+  const head = resume ? '再起動するね（会話を引き継ぐ）。' : '再起動するね（会話は引き継がない）。'
+  return { ok: true, message: `${head}終わったらこのチャンネルに通知するよ。` }
+}
+
+export function buildRestartDoneMessage(marker: Record<string, unknown>): string {
+  const old = String(marker.old_version ?? '').trim()
+  const now = String(marker.new_version ?? '').trim()
+  const head = old && now && old !== now ? `再起動したよ（${old} → ${now}）。` : old || now ? `再起動したよ（${old || now}、更新なし）。` : '再起動したよ。'
+  return head + (marker.resumed ? '直前の会話を引き継いでいるよ。' : 'ここからは新しいセッションで応対するね。')
+}
+
+/** 起動時に呼ぶ。補助スクリプトが置いたマーカーがあれば依頼元へ完了通知を投稿して消す */
+export async function notifyRestartDone(client: Client): Promise<void> {
+  if (!existsSync(RESTART_DONE_FILE)) return
+  let marker: Record<string, unknown> = {}
+  try {
+    marker = JSON.parse(readFileSync(RESTART_DONE_FILE, 'utf8')) as Record<string, unknown>
+  } catch (e) {
+    log(`restart-done.json を読めなかった: ${e}`)
+  }
+  try {
+    unlinkSync(RESTART_DONE_FILE)
+  } catch {}
+
+  const chatId = String(marker.chat_id ?? '')
+  const requested = Date.parse(String(marker.requested_at ?? ''))
+  const ageMs = Number.isNaN(requested) ? Number.POSITIVE_INFINITY : Date.now() - requested
+  if (!chatId || ageMs > RESTART_DONE_MAX_AGE_MS) {
+    log(`restart-done を無視した（chat_id=${chatId || '-'} age=${Number.isFinite(ageMs) ? Math.round(ageMs / 1000) + 's' : '不明'}）`)
+    return
+  }
+  const message = buildRestartDoneMessage(marker)
+  log(`restart done -> ${chatId}: ${message}`)
+  await postToChannel(client, chatId, message)
 }

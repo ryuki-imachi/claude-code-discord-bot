@@ -24,5 +24,13 @@
     "options": [
       { "name": "level", "description": "low / medium / high / xhigh / max / auto", "required": true }
     ]
+  },
+  {
+    "name": "restart",
+    "description": "Claude Code を再起動する（バージョンアップ用。resume: yes で会話を引き継ぐ）",
+    "action": "restart",
+    "options": [
+      { "name": "resume", "description": "yes を指定すると直前の会話を引き継いで起動し直す", "required": false }
+    ]
   }
 ]
