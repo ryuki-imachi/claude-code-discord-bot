@@ -9,7 +9,7 @@
  *   - presence.ts: show Claude Code context usage in the bot's activity (startPresence on clientReady)
  *   - 'ready' -> 'clientReady' (discord.js 14.27 deprecation)
  *   - commands.ts: slash commands (/ctx, /clear, ...) forwarded to Claude as skill invocations
- *   - session-control.ts: /model and /effort handled in-server (tmux send-keys to the claude pane)
+ *   - session-control.ts: /model, /effort and /restart handled in-server (tmux send-keys to the claude pane)
  */
 /**
  * Discord channel for Claude Code.
@@ -49,7 +49,7 @@ import { homedir } from 'os'
 import { join, sep } from 'path'
 import { startPresence } from './presence'
 import { registerSlashCommands, toSkillInvocation, findCommand, type CommandDef } from './commands'
-import { switchSetting } from './session-control'
+import { switchSetting, restartSession, notifyRestartDone } from './session-control'
 
 const STATE_DIR = process.env.DISCORD_STATE_DIR ?? join(homedir(), '.claude', 'channels', 'discord')
 const ACCESS_FILE = join(STATE_DIR, 'access.json')
@@ -826,7 +826,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 // Slash command → Claude へのスキル呼び出し。送信者は allowFrom に居ること、
 // 送信先はチャンネル受信設定（groups）済みか DM であること（reply ツールの出口ゲートと揃える）。
 // 3 秒以内に ephemeral で受け付けを返し、結果は Claude が reply ツールで通常のメッセージとして投稿する。
-// action 付きのコマンド（/model、/effort）は Claude に渡さず、channel サーバー自身が処理する。
+// action 付きのコマンド（/model、/effort、/restart）は Claude に渡さず、channel サーバー自身が処理する。
 async function handleSlashCommand(interaction: ChatInputCommandInteraction): Promise<void> {
   const access = loadAccess()
   if (!access.allowFrom.includes(interaction.user.id)) {
@@ -850,6 +850,16 @@ async function handleSlashCommand(interaction: ChatInputCommandInteraction): Pro
     const value = interaction.options.getString(optName) ?? ''
     const result = await switchSetting(def.action, value, interaction.channelId, client)
     // NG は本人にだけ、成功は通常のメッセージ（他の人にも見えるほうが分かりやすい）
+    await interaction
+      .reply(result.ok ? { content: result.message } : { content: result.message, flags: MessageFlags.Ephemeral })
+      .catch(() => {})
+    if (isDM) dmChannelUsers.set(interaction.channelId, interaction.user.id)
+    return
+  }
+  if (def?.action === 'restart') {
+    const raw = (interaction.options.getString('resume') ?? '').trim().toLowerCase()
+    const resume = ['yes', 'y', 'true', '1', 'on'].includes(raw)
+    const result = restartSession(resume, interaction.channelId, client)
     await interaction
       .reply(result.ok ? { content: result.message } : { content: result.message, flags: MessageFlags.Ephemeral })
       .catch(() => {})
@@ -979,6 +989,8 @@ client.once('clientReady', c => {
   process.stderr.write(`discord channel: gateway connected as ${c.user.tag}\n`)
   startPresence(c)
   void registerSlashCommands(c).then(defs => { slashCommands = defs })
+  // Discord からの /restart で起動し直された場合、依頼元のチャンネルへ完了を伝える
+  void notifyRestartDone(c)
 })
 
 client.login(TOKEN).catch(err => {

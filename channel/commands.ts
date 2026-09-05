@@ -9,7 +9,7 @@
  *     "options": [ { "name": "text", "description": "...", "required": true } ] }
  * options は文字列引数だけを扱う。実行時は「<skill> <引数の値...>」という 1 行を Claude に渡す。
  *
- * skill の代わりに action を持つ定義（/model、/effort）は Claude に渡さず、
+ * skill の代わりに action を持つ定義（/model、/effort、/restart）は Claude に渡さず、
  * channel サーバー自身が session-control.ts で処理する（tmux ペインへ送り込む）。
  *
  * 起動時に Bot が参加している各ギルドへコマンドを登録する（ギルドコマンドは即時反映）。
