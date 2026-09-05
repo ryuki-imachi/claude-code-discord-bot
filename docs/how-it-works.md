@@ -8,6 +8,24 @@
 - 手動でターミナルから `/clear` した場合はマーカーが無いので通知しません。10 分より古いマーカーも無視します
 - 送り先の特定は `CLAUDE_PID` → その TTY → 同じ TTY を持つ tmux ペイン、の順です。tmux の外では NG を返します
 
+## /restart の流れ
+
+Claude Code のバージョンを上げるには、常駐セッションを新しいバイナリで立ち上げ直す必要があります。ただし
+セッション自身に `tmux new-window` や自分を落とすコマンドを打たせようとすると auto mode の分類器に拒否されるので、
+危ない操作は外側のスーパーバイザーに任せます。
+
+1. ランチャー（`scripts/start-discord.sh`）は、tmux のペインで claude ではなく自分自身を `--supervise` で動かします。claude はその子プロセスになります
+2. Discord から `/restart` が届くと、restart スキルは `~/.claude/discord-bot/pending-restart.json` にマーカーを書くだけでターンを終えます（Claude 側がするのはファイル書き込みだけです）
+3. スーパーバイザーは 3 秒おきにマーカーを見ていて、見つけたら自分のペイン（`$TMUX_PANE`）へ `/exit` を送ります。`/exit` はターン実行中でもキューされるので、ターンが終わった直後に claude が終了します
+4. claude が終わったら `claude update`（180 秒でタイムアウト。終了コードの仕様が公開されていないので失敗しても続行）を実行し、`restart-done.json` を置いてから同じ cwd・同じ引数で起動し直します
+5. 新セッションの SessionStart(startup|resume) フック `hooks/notify-restart-done.py` がそれを読み、依頼元チャンネルへ「再起動したよ（2.1.261 → 2.1.262）」を投稿して消します
+
+- 既定では会話を引き継ぎません。`/restart resume:yes` のときだけマーカーにセッション ID が入り、`--resume <id>` を付けて起動し直します
+- ターミナルで `/exit` したときはマーカーが無いのでそのまま終了し、tmux のウィンドウが閉じます（今までどおり）
+- スーパーバイザー無しで起動された構成では restart スキルが NG を返します。判定は `supervisor.json` の pid が生きていて、それが自分（`CLAUDE_PID`）の祖先に居ることです
+- 取り残し対策として、スーパーバイザーは起動時に古い `pending-restart.json` を消し、完了通知フックは 10 分より古い `restart-done.json` を無視します
+- `/exit` を送ってから 90 秒たっても claude が終わらないときは、C-c を送ってからもう一度 `/exit` を送ります
+
 ## Bot ステータス
 
 ![Bot ステータスのデータの流れ](diagrams/presence.png)

@@ -23,11 +23,12 @@ Bot ステータス表示を載せたものです。作った経緯と考え方�
 | アクセス管理 | `/discord-bot:access` でペアリング承認・allowlist・チャンネルの受信設定<br>`/discord-bot:configure` で Bot トークンの保存<br>設定ファイルは公式と同じ `~/.claude/channels/discord/` |
 | コンテキスト使用量の表示 | Discord で `/ctx`<br>ctx / 5h / 7d の使用率をコードブロックで返す |
 | Discord からのクリア | Discord で `/clear`<br>宣言 → tmux ペインに `/clear` を送信 → 新セッション開始時に「クリアしたよ」を自動投稿 |
+| Discord からの再起動 | Discord で `/restart`（`resume: yes` で会話を引き継ぐ）<br>マーカーを書く → スーパーバイザーが `/exit` → `claude update` → 起動し直し → 「再起動したよ（2.1.261 → 2.1.262）」を自動投稿 |
 | Bot ステータスに使用量を常時表示 | Bot のアクティビティを `ctx 53% · 5h 46% · 7d 17%` に更新<br>ctx 80% 以上で赤 / セッション無しで黄 |
 | サーバー管理 MCP | チャンネル・カテゴリ・フォーラムスレッドの作成・編集・削除・一覧（`server-admin` 9 ツール） |
 | チャンネル作成ワークフロー | `/discord-bot:setup-channel`<br>作成 → access.json の受信設定 → 受信テスト<br>作成直後にフックが受信設定を促す |
-| スラッシュコマンド | `/ctx` `/clear` を同梱<br>`~/.claude/discord-bot/commands.json` に書けば任意のスキルを引数付きで呼べる |
-| 起動ランチャー | `scripts/start-discord.sh` が tmux セッション `discord` で claude を起動<br>二重起動は防ぐ |
+| スラッシュコマンド | `/ctx` `/clear` `/restart` を同梱<br>`~/.claude/discord-bot/commands.json` に書けば任意のスキルを引数付きで呼べる |
+| 起動ランチャー | `scripts/start-discord.sh` が tmux セッション `discord` で claude を起動<br>二重起動は防ぎ、スーパーバイザーとして claude を見守って `/restart` で起動し直す |
 
 ## セットアップ
 
@@ -100,6 +101,11 @@ Claude Code は公式以外の channel プラグインからの通知を既定�
 起動画面の上のほうに「messages from plugin:discord-bot@ryuki-plugins inject directly in this session」と出て、
 その下に「not on the approved channels allowlist」の行が無ければ、Discord からのメッセージが届く状態です。
 
+tmux のペインの中で動くのは claude ではなく、このスクリプト自身（`--supervise` モード）です。claude の終了を見張っていて、
+Discord から `/restart` が来たときだけ `claude update` を挟んで起動し直します。ターミナルで `/exit` したときはそのまま終了します。
+`~/.local/bin/discord-start` のようにコピーして使っている場合は、スーパーバイザー本体も同じファイルに入っているので、
+プラグインを更新したら新しい `scripts/start-discord.sh` をコピーし直してください。
+
 ## 使い方
 
 Discord のチャンネルで `/ctx` と送ると、次のような返事が来ます。
@@ -115,6 +121,10 @@ ctx ■■■■■□□□□□ 54%  544.8K / 1000.0K tokens
 `/clear` と送ると「クリアするね（今 54%）」と返事があり、数秒後に「コンテキストをクリアしたよ」が届きます。
 その次のメッセージから新しいセッションになります。作業途中の要点は、クリア前に台帳などへ書いておいてください。
 
+`/restart` と送ると、数秒後にセッションが終了して同じ tmux ペインで起動し直し、「再起動したよ（2.1.261 → 2.1.262）」が届きます。
+Claude Code のバージョンを上げるときに使います。会話は引き継がないので、`/clear` と同じく要点は先に書き出しておいてください。
+引き継ぎたいときは `/restart resume:yes` と送ります。
+
 Bot のステータスは、Claude が応答してステータスラインが再描画されるたびに更新されます。channel サーバーがその値を
 最大 20 秒ごとに拾うので、何もしていない間は変わりません。カードの 2 行目にある「更新 HH:MM」が、最後に再描画された時刻です。
 
@@ -124,7 +134,7 @@ Bot のステータスは、Claude が応答してステータスラインが再
 ## ドキュメント
 
 - [docs/background.md](docs/background.md) 背景と考え方、関連記事
-- [docs/how-it-works.md](docs/how-it-works.md) /clear の流れ、Bot ステータス、スラッシュコマンド、サーバー管理 MCP、制約
+- [docs/how-it-works.md](docs/how-it-works.md) /clear と /restart の流れ、Bot ステータス、スラッシュコマンド、サーバー管理 MCP、制約
 - [docs/development.md](docs/development.md) 更新のしかた、ディレクトリ構成、移植の経緯
 
 ## ライセンス

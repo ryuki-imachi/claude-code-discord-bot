@@ -8,5 +8,17 @@
     "name": "clear",
     "description": "Claude のコンテキストをクリアして新しいセッションにする",
     "skill": "/discord-bot:clear"
+  },
+  {
+    "name": "restart",
+    "description": "Claude Code を再起動する（バージョンアップ用。resume: yes で会話を引き継ぐ）",
+    "skill": "/discord-bot:restart",
+    "options": [
+      {
+        "name": "resume",
+        "description": "yes で直前の会話を引き継ぐ（省略時はまっさら）",
+        "required": false
+      }
+    ]
   }
 ]

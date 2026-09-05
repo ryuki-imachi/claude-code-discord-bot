@@ -13,9 +13,13 @@ claude plugin update discord-bot@ryuki-plugins --scope project
 そのあと、動いている Discord セッションで `/reload-plugins` を打つとスキルとフックが入れ替わります。
 ただし MCP サーバー（channel サーバーと server-admin）は、`.mcp.json` の設定が変わらない限り `/reload-plugins` では
 再起動されません。`channel/` や `mcp/` のコードを変えたときや、`~/.claude/discord-bot/commands.json` に
-コマンドを足したときは、セッションを再起動してください（`scripts/start-discord.sh --resume <session-id>` で会話は引き継げます）。
+コマンドを足したときは、セッションを再起動してください（`scripts/start-discord.sh --resume <session-id>` で会話は引き継げます。
+Discord からなら `/restart`、会話ごと引き継ぐなら `/restart resume:yes` でも同じことができます）。
 ローカルディレクトリ由来のプラグインはスキル本文を元ディレクトリから直接読んでいるようなので
 （`${CLAUDE_SKILL_DIR}` が元のパスを指す）、`/reload-plugins` だけで反映されることも多いです。
+
+`scripts/start-discord.sh` を `~/.local/bin/discord-start` などへコピーして使っている場合は、スーパーバイザー本体が
+同じファイルに入っているので、変えたらコピーし直してください。
 
 channel サーバーの元になった公式プラグインは `discord@claude-plugins-official` の 0.0.4 です。
 上流に変更があったら `channel/server.ts` に取り込みます（差分の要点はファイル先頭のコメントに書いてあります）。
@@ -36,18 +40,25 @@ mcp/server-admin/                   サーバー管理 MCP（Python、uv）
 skills/access/ skills/configure/    アクセス管理とトークン設定（上流のスキルを名前空間だけ変えたもの）
 skills/ctx/                         /discord-bot:ctx
 skills/clear/                       /discord-bot:clear
+skills/restart/                     /discord-bot:restart（再起動要求のマーカーを置く）
 skills/setup-channel/               /discord-bot:setup-channel
-hooks/hooks.json                    SessionStart(clear) の完了通知、PostToolUse(create_channel) の受信設定リマインド
+hooks/hooks.json                    SessionStart(clear) のクリア完了通知、SessionStart(startup|resume) の再起動完了通知、
+                                    PostToolUse(create_channel) の受信設定リマインド
 hooks/notify-clear-done.py
+hooks/notify-restart-done.py
 hooks/remind-channel-access.py
-scripts/start-discord.sh            tmux セッション discord に claude を起動するランチャー
+scripts/start-discord.sh            tmux セッション discord に claude を起動するランチャー兼、claude を見守って
+                                    /restart で起動し直すスーパーバイザー（--supervise）
 scripts/statusline_dump.py          ステータスライン JSON を保存するラッパー（古いダンプの掃除つき）
 scripts/discord_presence_check.py   自 Bot のプレゼンスを読む確認用（Presence Intent が必要）
 docs/migration-plan.md              移植の手順書と公開前チェックリスト
 docs/diagrams/                      図の元ファイル（.drawio）と書き出した PNG。編集は draw.io で、書き出しは drawio CLI（--scale 3）
 ```
 
-状態ファイルは `~/.claude/discord-bot/`（`pending-clear.json`、`clear-notify.log`）に、
+状態ファイルは `~/.claude/discord-bot/` に置きます。`/clear` 用が `pending-clear.json` と `clear-notify.log`、
+`/restart` 用が `supervisor.json`（スーパーバイザーの pid / pane / cwd）、`pending-restart.json`（再起動要求）、
+`restart-done.json`（完了マーカー）、`restart.log`（スーパーバイザーと `claude update` の記録）、
+`restart-notify.log`（完了通知の記録）です。
 Discord の設定は公式プラグインと同じ `~/.claude/channels/discord/`（`.env`、`access.json`）に置きます。
 
 ## 移植の経緯
