@@ -30,6 +30,7 @@ channel/                            Discord channel サーバー（公式プラ�
   server.ts                         送受信・アクセス制御・権限中継（上流 0.0.4 + 改変）
   presence.ts                       Bot ステータスへの使用量表示
   commands.ts / commands.json       スラッシュコマンドの登録と、スキル呼び出しへの変換
+  session-control.ts                /model・/effort をサーバー側で処理（ペイン特定・send-keys・切り替わりの監視）
   ACCESS.md                         アクセス制御の説明（上流をスキル名だけ書き換えたもの）
   UPSTREAM-README.md                上流の README（原文のまま）
 mcp/server-admin/                   サーバー管理 MCP（Python、uv）

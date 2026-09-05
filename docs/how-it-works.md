@@ -24,7 +24,7 @@ playing（既定）/ watching / listening / competing / custom を選べます�
 ![スラッシュコマンドの流れ](diagrams/slash-command.png)
 
 channel サーバーは起動時に、Bot が参加している各サーバーへスラッシュコマンドを登録します（ギルドコマンドなので即時反映）。
-定義は `channel/commands.json`（同梱: `/ctx`、`/clear`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
+定義は `channel/commands.json`（同梱: `/ctx`、`/clear`、`/model`、`/effort`）と、`~/.claude/discord-bot/commands.json`（追加分）を合わせたものです。
 ワークスペース固有のコマンドは追加分のファイルに書きます。同名なら追加分が勝ちます。
 
 ```js
@@ -46,6 +46,44 @@ channel サーバーは起動時に、Bot が参加している各サーバー�
 通常のメッセージとしてチャンネルに投稿します。登録には Bot の招待時に `applications.commands` スコープが必要で、
 無い場合は起動ログに再認可用の URL が出ます。`DISCORD_SLASH_COMMANDS=off` で登録を止められます。
 
+### サーバー側で処理するコマンド（action）
+
+定義に `skill` ではなく `action` を書いたコマンドは、Claude に渡さず channel サーバー自身が処理します
+（`channel/session-control.ts`）。Claude のターンを使わないので、Claude が長い作業の途中でも即座に効きます。
+`action` は同梱の `model` と `effort` だけで、追加分の `commands.json` からも同名で上書きできます。
+
+```js
+[
+  {
+    "name": "effort",
+    "description": "Claude の思考の深さ（effort）を切り替える",
+    "action": "effort",
+    "options": [
+      { "name": "level", "description": "low / medium / high / xhigh / max / auto", "required": true }
+    ]
+  }
+]
+```
+
+### /model と /effort の流れ
+
+`/clear` と同じ「claude の PID → その TTY → 同じ TTY を持つ tmux ペイン」でペインを特定し、そこへ
+`/model <alias>` や `/effort <level>` を打ち込みます。違うのは、送るのが Claude ではなく channel サーバーだという点です。
+
+1. 引数を検証します。model は `best` `fable` `opus` `sonnet` `haiku` `sonnet[1m]` `opus[1m]` `opusplan` か
+   `claude-` で始まる完全なモデル ID、effort は `low` `medium` `high` `xhigh` `max` `auto` です。
+   無効な値は何も送らず、依頼した本人にだけ見える形で理由と有効な一覧を返します
+2. ペインを特定できなければ、同じく本人にだけ見える形で NG を返します（tmux の外では送れません）
+3. ステータスラインのダンプから現在値を控えてから送信し、「/model sonnet を送ったよ（今は Fable 5.1 / effort high）。
+   次のメッセージから切り替わるよ」と返します。スラッシュコマンドはターン実行中でもキューされ、ターン終了直後に実行されます
+4. 送信後は 2 秒おきに最大 90 秒ダンプを読み直し、送信時刻より新しい更新で `model.id` / `model.display_name` /
+   `effort.level` が変わったら「モデルを Sonnet 5 に切り替えたよ（effort high）」を依頼元のチャンネルへ投稿します。
+   検知できないままタイムアウトしたときは何も投稿せず、標準エラーにログを残すだけです（検知できなくても切り替わりは効いています）
+
+- `/model <alias>` の引数指定は「切り替えてデフォルトとして保存」する挙動（ピッカーの Enter 相当）です。
+  セッション限定にする指定方法が無いため、ターミナルで新しく開くセッションのデフォルトモデルも変わります
+- `effort` の `low`〜`xhigh` はモデルごとに保存され、`max` はセッション限り、`auto` は保存済みの設定をクリアします
+
 ## サーバー管理 MCP
 
 `mcp/server-admin/` は Python（FastMCP + httpx）の MCP サーバーで、Discord REST API v10 を直接呼びます。
@@ -57,7 +95,7 @@ Claude から見たツール名は `mcp__plugin_discord-bot_server-admin__<tool>
 
 ## 制約と注意
 
-- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` を送れず、Claude がその旨を Discord に伝えます
+- Discord セッションは tmux の中で動かす前提です。tmux の外やリモート（SDK）セッションでは `/clear` `/model` `/effort` を送れず、その旨を Discord に返します
 - `--channels` 付きの claude を 2 つ立てると Discord に二重返信します。ランチャーは検出して止めますが、手で起動するときは注意してください
 - Bot のステータスをプログラムから読み取るには Developer Portal で Presence Intent を有効にする必要があります（設定するだけなら不要）。`scripts/discord_presence_check.py` は確認用です
 - `/compact` は対象外です。同じ仕組みで送れますが、要約中に Discord 側が無音になるので用意していません

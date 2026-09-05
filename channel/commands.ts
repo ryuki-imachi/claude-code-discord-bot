@@ -9,6 +9,9 @@
  *     "options": [ { "name": "text", "description": "...", "required": true } ] }
  * options は文字列引数だけを扱う。実行時は「<skill> <引数の値...>」という 1 行を Claude に渡す。
  *
+ * skill の代わりに action を持つ定義（/model、/effort）は Claude に渡さず、
+ * channel サーバー自身が session-control.ts で処理する（tmux ペインへ送り込む）。
+ *
  * 起動時に Bot が参加している各ギルドへコマンドを登録する（ギルドコマンドは即時反映）。
  * 登録には Bot の招待時に applications.commands スコープが必要。無い場合はログに招待 URL を出す。
  * DISCORD_SLASH_COMMANDS=off で無効化できる。
@@ -18,10 +21,14 @@ import { readFileSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 
+/** action 付きはサーバー側で処理する（skill 省略可）。両方あれば action が優先 */
+export type CommandAction = 'model' | 'effort' | 'restart'
+
 export type CommandDef = {
   name: string
   description: string
-  skill: string
+  skill?: string
+  action?: CommandAction
   options?: { name: string; description: string; required?: boolean }[]
 }
 
@@ -38,7 +45,10 @@ function readDefs(path: string): CommandDef[] {
     if (!Array.isArray(parsed)) return []
     return parsed.filter(
       (c): c is CommandDef =>
-        typeof c === 'object' && c !== null && typeof (c as CommandDef).name === 'string' && typeof (c as CommandDef).skill === 'string',
+        typeof c === 'object' &&
+        c !== null &&
+        typeof (c as CommandDef).name === 'string' &&
+        (typeof (c as CommandDef).skill === 'string' || typeof (c as CommandDef).action === 'string'),
     )
   } catch {
     return []
@@ -55,7 +65,7 @@ export function loadCommandDefs(): CommandDef[] {
 }
 
 function toBuilder(c: CommandDef): SlashCommandBuilder {
-  const b = new SlashCommandBuilder().setName(c.name).setDescription((c.description || c.skill).slice(0, 100))
+  const b = new SlashCommandBuilder().setName(c.name).setDescription((c.description || c.skill || c.name).slice(0, 100))
   for (const o of c.options ?? []) {
     b.addStringOption(opt =>
       opt.setName(o.name).setDescription((o.description || o.name).slice(0, 100)).setRequired(o.required ?? false),
@@ -88,10 +98,18 @@ export async function registerSlashCommands(client: Client<true>): Promise<Comma
   return defs
 }
 
-/** interaction をスキル呼び出しの 1 行に変換する。「/discord-bot:ctx」「/task-memo 追加 明日〜」のような形 */
+/** 名前から定義を引く。サーバー側で処理するか（action）Claude に渡すか（skill）の判定に使う */
+export function findCommand(defs: CommandDef[], name: string): CommandDef | undefined {
+  return defs.find(d => d.name === name)
+}
+
+/**
+ * interaction をスキル呼び出しの 1 行に変換する。「/discord-bot:ctx」「/task-memo 追加 明日〜」のような形。
+ * action 付き（サーバー側で処理する定義）は null を返す。
+ */
 export function toSkillInvocation(defs: CommandDef[], interaction: ChatInputCommandInteraction): string | null {
-  const def = defs.find(d => d.name === interaction.commandName)
-  if (!def) return null
+  const def = findCommand(defs, interaction.commandName)
+  if (!def || !def.skill || def.action) return null
   const args = (def.options ?? [])
     .map(o => interaction.options.getString(o.name))
     .filter((v): v is string => typeof v === 'string' && v.length > 0)

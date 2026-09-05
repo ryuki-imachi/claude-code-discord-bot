@@ -8,5 +8,21 @@
     "name": "clear",
     "description": "Claude のコンテキストをクリアして新しいセッションにする",
     "skill": "/discord-bot:clear"
+  },
+  {
+    "name": "model",
+    "description": "Claude が使うモデルを切り替える（例: sonnet、opus、fable）",
+    "action": "model",
+    "options": [
+      { "name": "alias", "description": "sonnet / opus / fable / haiku / opusplan などのエイリアス、または完全なモデルID", "required": true }
+    ]
+  },
+  {
+    "name": "effort",
+    "description": "Claude の思考の深さ（effort）を切り替える",
+    "action": "effort",
+    "options": [
+      { "name": "level", "description": "low / medium / high / xhigh / max / auto", "required": true }
+    ]
   }
 ]

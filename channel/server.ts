@@ -9,6 +9,7 @@
  *   - presence.ts: show Claude Code context usage in the bot's activity (startPresence on clientReady)
  *   - 'ready' -> 'clientReady' (discord.js 14.27 deprecation)
  *   - commands.ts: slash commands (/ctx, /clear, ...) forwarded to Claude as skill invocations
+ *   - session-control.ts: /model and /effort handled in-server (tmux send-keys to the claude pane)
  */
 /**
  * Discord channel for Claude Code.
@@ -47,7 +48,8 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, statSync, 
 import { homedir } from 'os'
 import { join, sep } from 'path'
 import { startPresence } from './presence'
-import { registerSlashCommands, toSkillInvocation, type CommandDef } from './commands'
+import { registerSlashCommands, toSkillInvocation, findCommand, type CommandDef } from './commands'
+import { switchSetting } from './session-control'
 
 const STATE_DIR = process.env.DISCORD_STATE_DIR ?? join(homedir(), '.claude', 'channels', 'discord')
 const ACCESS_FILE = join(STATE_DIR, 'access.json')
@@ -824,6 +826,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 // Slash command → Claude へのスキル呼び出し。送信者は allowFrom に居ること、
 // 送信先はチャンネル受信設定（groups）済みか DM であること（reply ツールの出口ゲートと揃える）。
 // 3 秒以内に ephemeral で受け付けを返し、結果は Claude が reply ツールで通常のメッセージとして投稿する。
+// action 付きのコマンド（/model、/effort）は Claude に渡さず、channel サーバー自身が処理する。
 async function handleSlashCommand(interaction: ChatInputCommandInteraction): Promise<void> {
   const access = loadAccess()
   if (!access.allowFrom.includes(interaction.user.id)) {
@@ -841,6 +844,19 @@ async function handleSlashCommand(interaction: ChatInputCommandInteraction): Pro
       return
     }
   }
+  const def = findCommand(slashCommands, interaction.commandName)
+  if (def?.action === 'model' || def?.action === 'effort') {
+    const optName = def.options?.[0]?.name ?? (def.action === 'model' ? 'alias' : 'level')
+    const value = interaction.options.getString(optName) ?? ''
+    const result = await switchSetting(def.action, value, interaction.channelId, client)
+    // NG は本人にだけ、成功は通常のメッセージ（他の人にも見えるほうが分かりやすい）
+    await interaction
+      .reply(result.ok ? { content: result.message } : { content: result.message, flags: MessageFlags.Ephemeral })
+      .catch(() => {})
+    if (isDM) dmChannelUsers.set(interaction.channelId, interaction.user.id)
+    return
+  }
+
   const invocation = toSkillInvocation(slashCommands, interaction)
   if (!invocation) {
     await interaction.reply({ content: '未登録のコマンドです。', flags: MessageFlags.Ephemeral }).catch(() => {})
