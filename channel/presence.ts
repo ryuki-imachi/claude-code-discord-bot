@@ -20,12 +20,13 @@ const MODE = (process.env.DISCORD_PRESENCE_MODE ?? 'playing').toLowerCase()
 const INTERVAL_MS = Number(process.env.DISCORD_PRESENCE_INTERVAL ?? '20') * 1000
 const WARN_PCT = 80
 
-type Dump = {
+export type Dump = {
   session_id?: string
   cwd?: string
   _claude_pid?: number
   _dumped_at?: string
-  model?: { display_name?: string }
+  model?: { id?: string; display_name?: string }
+  effort?: { level?: string }
   context_window?: { used_percentage?: number; total_input_tokens?: number; context_window_size?: number }
   rate_limits?: Record<string, { used_percentage?: number }>
 }
@@ -104,7 +105,7 @@ export function buildPresence(d: Dump | null): { status: PresenceStatusData; lin
   }
   const details: string[] = []
   if (used != null) details.push(`${fmtTokens(ctx.total_input_tokens ?? 0)} / ${fmtTokens(ctx.context_window_size ?? 0)} tokens`)
-  if (d.model?.display_name) details.push(d.model.display_name)
+  if (d.model?.display_name) details.push(d.effort?.level ? `${d.model.display_name} · effort ${d.effort.level}` : d.model.display_name)
   const at = dumpedAt(d)
   if (at) {
     const t = new Date(at + 9 * 3600 * 1000) // JST
